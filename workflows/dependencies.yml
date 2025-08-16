@@ -1,0 +1,170 @@
+name: Dependencies
+
+on:
+  schedule:
+    # Run every Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      dependency_type:
+        description: 'Type of dependency to update'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - patch
+          - minor
+          - major
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Install cargo-edit
+        run: |
+          cargo install cargo-edit --version 0.12.0 || {
+            echo "Failed to install cargo-edit, trying latest version..."
+            cargo install cargo-edit
+          }
+
+      - name: Install cargo-update
+        run: |
+          cargo install cargo-update --version 0.8.0
+
+      - name: Check current dependency status
+        run: |
+          echo "Current dependency status:"
+          cargo outdated || echo "No outdated dependencies found or cargo-outdated not available"
+          # Note: cargo outdated is informational only and won't fail the workflow
+
+      - name: Update Cargo.lock
+        run: cargo update
+
+      - name: Update dependencies based on type
+        run: |
+          case "${{ github.event.inputs.dependency_type || 'all' }}" in
+            "patch")
+              echo "Updating patch versions..."
+              cargo upgrade --incompatible=false || echo "Some patch updates failed, continuing..."
+              ;;
+            "minor")
+              echo "Updating minor versions..."
+              cargo upgrade --incompatible=false --recursive=false || echo "Some minor updates failed, continuing..."
+              ;;
+            "major")
+              echo "Updating all versions..."
+              cargo upgrade || echo "Some major updates failed, continuing..."
+              ;;
+            *)
+              echo "Updating all versions..."
+              cargo upgrade || echo "Some updates failed, continuing..."
+              ;;
+          esac
+
+      - name: Check if updates were made
+        id: check-updates
+        run: |
+          if git diff --quiet Cargo.lock; then
+            echo "no_updates=true" >> "$GITHUB_OUTPUT"
+            echo "No dependency updates found"
+          else
+            echo "no_updates=false" >> "$GITHUB_OUTPUT"
+            echo "Dependency updates found"
+          fi
+
+      - name: Verify build after updates
+        run: |
+          echo "Verifying that the project still builds after dependency updates..."
+          cargo check --all-features || {
+            echo "Build failed after dependency updates, reverting Cargo.lock..."
+            git checkout -- Cargo.lock
+            echo "no_updates=true" >> "$GITHUB_OUTPUT"
+            echo "Build verification failed, no updates applied"
+            exit 0
+          }
+
+      - name: Check dependency sorting
+        run: |
+          # Install cargo-sort if not available
+          if ! command -v cargo-sort &> /dev/null; then
+            cargo install cargo-sort
+          fi
+          cargo sort --check
+
+      - name: Create pull request
+        if: steps.check-updates.outputs.no_updates == 'false'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update dependencies"
+          title: "🤖 Automated dependency updates"
+          body: |
+            ## 🤖 Automated Dependency Updates
+            
+            This PR was automatically created to update project dependencies.
+            
+            ### Changes Made
+            - Updated Cargo.lock with latest compatible versions
+            - Dependency type: ${{ github.event.inputs.dependency_type || 'all' }}
+            
+            ### Review Required
+            - [ ] Review dependency updates
+            - [ ] Run tests locally
+            - [ ] Check for breaking changes
+            
+            ### Commands to test locally
+            ```bash
+            cargo update
+            cargo test
+            cargo build --release
+            ```
+            
+            ---
+            *This PR was created automatically by GitHub Actions*
+          branch: dependabot/rust/update-dependencies-${{ github.run_number }}
+          delete-branch: true
+          labels: |
+            dependencies
+            automated
+            rust
+          assignees: ${{ github.repository_owner }}
+
+      - name: Comment on PR
+        if: steps.check-updates.outputs.no_updates == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('🤖 Automated Dependency Updates')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: botComment.body + '\n\n✅ Dependencies updated successfully!'
+              });
+            } 

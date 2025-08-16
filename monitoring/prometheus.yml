@@ -1,0 +1,38 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: 'mev_relay'
+    static_configs:
+      - targets: ['mev_relay:9090']
+    scrape_interval: 5s
+    metrics_path: '/metrics'
+    scrape_timeout: 10s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  - job_name: 'ethereum_node'
+    static_configs:
+      - targets: ['ethereum_node:8545']
+    scrape_interval: 30s
+    scrape_timeout: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  # - "example.yml"
+  # - "rules/*.yml" 

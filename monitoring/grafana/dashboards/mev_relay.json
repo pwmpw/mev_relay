@@ -1,0 +1,161 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "MEV Relay Dashboard",
+    "tags": ["mev", "ethereum", "redis"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Events Processed",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "mev_relay_events_total",
+            "legendFormat": "Total Events"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "displayMode": "basic"
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Events by Source",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "mev_relay_events_mempool",
+            "legendFormat": "Mempool"
+          },
+          {
+            "expr": "mev_relay_events_flashbots",
+            "legendFormat": "Flashbots"
+          },
+          {
+            "expr": "mev_relay_events_block",
+            "legendFormat": "Block"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Event Processing Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(mev_relay_events_total[5m])",
+            "legendFormat": "Events/sec"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 4,
+        "title": "Processing Duration",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "rate(mev_relay_event_processing_duration_seconds_bucket[5m])",
+            "legendFormat": "{{le}}"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 5,
+        "title": "Redis Publish Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(mev_relay_redis_publish_duration_seconds_sum[5m]) / rate(mev_relay_redis_publish_duration_seconds_count[5m])",
+            "legendFormat": "Avg Duration"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        }
+      },
+      {
+        "id": 6,
+        "title": "System Health",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "mev_relay_uptime_seconds",
+            "legendFormat": "Uptime"
+          },
+          {
+            "expr": "mev_relay_active_connections",
+            "legendFormat": "Active Connections"
+          },
+          {
+            "expr": "mev_relay_pending_events",
+            "legendFormat": "Pending Events"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 7,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(mev_relay_errors_total[5m])",
+            "legendFormat": "Errors/sec"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s"
+  }
+} 

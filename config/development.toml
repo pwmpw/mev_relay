@@ -1,0 +1,37 @@
+[redis]
+url = "redis://localhost:6379"
+channel = "mev_swaps"
+pool_size = 5
+connection_timeout = 2000
+read_timeout = 1000
+
+[ethereum]
+rpc_url = "http://localhost:8545"
+ws_url = "ws://localhost:8546"
+chain_id = 1337
+max_block_range = 100
+block_timeout = 10000
+
+[mempool]
+enabled = true
+rpc_url = "http://localhost:8545"
+max_concurrent_requests = 10
+request_timeout = 5000
+batch_size = 50
+
+[flashbots]
+enabled = false
+rpc_url = "https://relay.flashbots.net"
+auth_header = ""
+max_concurrent_requests = 5
+request_timeout = 10000
+
+[metrics]
+enabled = true
+host = "127.0.0.1"
+port = 9090
+
+[logging]
+level = "debug"
+format = "json"
+output = "stdout" 
