@@ -1,5 +1,7 @@
 pub mod shared;
 pub mod events;
+pub mod messaging;
+pub mod infrastructure;
 
 // Re-export commonly used types
 pub use shared::types::{H160, H256};

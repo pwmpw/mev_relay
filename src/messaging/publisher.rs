@@ -81,7 +81,7 @@ impl EventPublisherService {
     }
 
     /// Process a single event
-    async fn process_event(&self, event: &SwapEvent) -> Result<()> {
+    async fn process_event(&mut self, event: &SwapEvent) -> Result<()> {
         // Validate the event
         event.validate()
             .map_err(|e| anyhow::anyhow!("Event validation failed: {}", e))?;

@@ -15,7 +15,7 @@ tokio = { version = "1.35", features = ["full"] }
 tokio-stream = "0.1"
 
 # Redis client
-redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager", "streams"] }
 
 # Configuration
 config = "0.14"

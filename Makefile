@@ -132,6 +132,7 @@ test-all: ## Run all tests with different configurations
 	@$(MAKE) test
 	@$(MAKE) integration-test
 	@$(MAKE) testcontainers-test
+	@$(MAKE) redis-buffer-test
 	@$(MAKE) performance-test
 	@echo "✓ All tests complete"
 
@@ -144,6 +145,51 @@ testcontainers-test: ## Run testcontainers integration tests
 	@echo "Running testcontainers integration tests..."
 	@$(CARGO) test --test testcontainers_integration $(CARGO_FLAGS)
 	@echo "✓ Testcontainers integration tests complete"
+
+redis-buffer-test: ## Run Redis buffer integration tests
+	@echo "Running Redis buffer integration tests..."
+	@$(CARGO) test --test redis_buffer_integration $(CARGO_FLAGS)
+	@echo "✓ Redis buffer integration tests complete"
+
+redis-buffer-test-all: ## Run all Redis buffer tests with output
+	@echo "Running all Redis buffer tests with output..."
+	@$(CARGO) test --test redis_buffer_integration -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ All Redis buffer tests complete"
+
+redis-buffer-test-basic: ## Run basic Redis buffer tests
+	@echo "Running basic Redis buffer tests..."
+	@$(CARGO) test --test redis_buffer_integration test_redis_buffer_with_error_handling -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ Basic Redis buffer tests complete"
+
+redis-buffer-test-throughput: ## Run high-throughput scenario tests
+	@echo "Running high-throughput scenario tests..."
+	@$(CARGO) test --test redis_buffer_integration test_high_throughput_scenarios -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ High-throughput tests complete"
+
+redis-buffer-test-edge-cases: ## Run edge cases and boundary tests
+	@echo "Running edge cases and boundary tests..."
+	@$(CARGO) test --test redis_buffer_integration test_edge_cases_and_boundaries -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ Edge cases tests complete"
+
+redis-buffer-test-failures: ## Run failure scenarios and recovery tests
+	@echo "Running failure scenarios and recovery tests..."
+	@$(CARGO) test --test redis_buffer_integration test_failure_scenarios_and_recovery -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ Failure scenarios tests complete"
+
+redis-buffer-test-processor: ## Run buffered processor tests
+	@echo "Running buffered processor tests..."
+	@$(CARGO) test --test redis_buffer_integration test_buffered_processor_with_error_handling -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ Buffered processor tests complete"
+
+redis-buffer-test-stress: ## Run stress scenario tests
+	@echo "Running stress scenario tests..."
+	@$(CARGO) test --test redis_buffer_integration test_stress_scenarios -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ Stress scenario tests complete"
+
+redis-buffer-test-integration: ## Run integration and multi-buffer tests
+	@echo "Running integration and multi-buffer tests..."
+	@$(CARGO) test --test redis_buffer_integration test_multi_buffer_integration test_configuration_hot_reload test_error_propagation_and_logging -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ Integration tests complete"
 
 # Clean targets
 clean: ## Clean build artifacts
