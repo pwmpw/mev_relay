@@ -73,7 +73,7 @@ jobs:
       - name: Check binary size
         run: |
           echo "Binary size:"
-          ls -lh target/release/uniswap_relay
+          ls -lh target/release/mev_relay
 
   security:
     name: Security Audit

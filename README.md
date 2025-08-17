@@ -1,5 +1,13 @@
 # MEV Relay
 
+[![CI](https://github.com/pwmpw/mev_relay/workflows/CI/badge.svg)](https://github.com/pwmpw/mev_relay/actions?query=workflow%3ACI)
+[![Security Scan](https://github.com/pwmpw/mev_relay/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/pwmpw/mev_relay/actions/workflows/security.yml)
+[![Dependencies](https://github.com/pwmpw/mev_relay/actions/workflows/dependencies.yml/badge.svg)](https://github.com/pwmpw/mev_relay/actions/workflows/dependencies.yml)
+[![Docker](https://img.shields.io/badge/docker-✓-brightgreen?style=flat&logo=docker)](https://www.docker.com/)
+[![Testcontainers](https://img.shields.io/badge/testcontainers-✓-brightgreen?style=flat&logo=docker)](https://testcontainers.com/)
+[![Rust](https://img.shields.io/badge/rust-1.86+-orange?style=flat&logo=rust)](https://www.rust-lang.org/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A high-performance, production-ready DApp built in Rust that monitors real-time swap events on mempool + flashbots and publishes normalized swap events to a Redis pub/sub channel in real time.
 
 ## 🚀 Features
