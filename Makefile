@@ -131,6 +131,7 @@ test-all: ## Run all tests with different configurations
 	@echo "Running comprehensive tests..."
 	@$(MAKE) test
 	@$(MAKE) integration-test
+	@$(MAKE) testcontainers-test
 	@$(MAKE) performance-test
 	@echo "✓ All tests complete"
 
@@ -138,6 +139,11 @@ integration-test: ## Run integration tests
 	@echo "Running integration tests..."
 	@$(CARGO) test --test integration $(CARGO_FLAGS)
 	@echo "✓ Integration tests complete"
+
+testcontainers-test: ## Run testcontainers integration tests
+	@echo "Running testcontainers integration tests..."
+	@$(CARGO) test --test testcontainers_integration $(CARGO_FLAGS)
+	@echo "✓ Testcontainers integration tests complete"
 
 # Clean targets
 clean: ## Clean build artifacts

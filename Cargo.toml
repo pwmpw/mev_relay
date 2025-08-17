@@ -68,6 +68,8 @@ bincode = "2.0"
 tokio-test = "0.4"
 mockall = "0.12"
 wiremock = "0.5"
+testcontainers = "0.15"
+testcontainers-modules = { version = "0.3", features = ["redis", "postgres"] }
 
 [[bin]]
 name = "mev_relay"
