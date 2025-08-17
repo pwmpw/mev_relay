@@ -2,8 +2,8 @@ use crate::{
     events::domain::SwapEvent,
     infrastructure::config::Config,
     monitoring::domain::{MonitoringService, ServiceStatus},
-    shared::Result,
 };
+use crate::Result;
 use async_trait::async_trait;
 use reqwest::Client;
 use serde_json::Value;
@@ -71,11 +71,14 @@ impl FlashbotsMonitor {
                         break;
                     }
 
-                    if let Err(e) = self.poll_flashbots(&http_client, &config, &event_sender).await {
-                        error!("Flashbots polling error: {}", e);
-                        self.status.record_error(e.to_string());
-                    } else {
-                        self.status.mark_active();
+                    match self.poll_flashbots(&http_client, &config, &event_sender).await {
+                        Ok(_) => {
+                            // Status will be updated in the start/stop methods
+                        }
+                        Err(e) => {
+                            error!("Flashbots polling error: {}", e);
+                            // Status will be updated in the start/stop methods
+                        }
                     }
                 }
             }

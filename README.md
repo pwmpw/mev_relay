@@ -61,6 +61,7 @@ src/
 │   ├── parser.rs           # Event parsing from raw blockchain data
 │   ├── normalizer.rs       # Event normalization and validation
 │   ├── protocol.rs         # DEX protocol detection and management
+│   ├── filter.rs           # Pool filtering and event selection
 │   └── repository.rs       # Event persistence and retrieval
 ├── monitoring/             # Monitoring domain
 │   ├── domain.rs           # Monitoring abstractions and traits
@@ -143,6 +144,7 @@ The project has been recently refactored to implement a clean **Domain-Driven De
 - **Domain Models**: ✅ Rich domain entities with business logic
 - **Monitoring Services**: ✅ Mempool and Flashbots monitoring with trait abstractions
 - **Event Processing**: ✅ Parser, normalizer, and protocol detection
+- **Pool Filtering**: ✅ Intelligent filtering by pool, token, liquidity, and volume
 - **Messaging**: ✅ Redis pub/sub with publisher/subscriber services
 - **Infrastructure**: ✅ Configuration, logging, metrics, and health checks
 - **Testing**: 🔄 Unit tests implemented, integration tests in progress
@@ -233,13 +235,29 @@ chain_id = 1
 
 [mempool]
 enabled = true
+poll_interval = 100  # milliseconds
 max_concurrent_requests = 200
 batch_size = 500
 
 [flashbots]
 enabled = true
 rpc_url = "https://relay.flashbots.net"
+poll_interval = 1000  # milliseconds
 auth_header = "Bearer YOUR_KEY"
+
+[filtering]
+enabled = true
+# Only monitor specific pools and tokens
+pool_addresses = [
+    "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc7",  # USDC/ETH
+    "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8",  # USDC/ETH V3
+]
+token_addresses = [
+    "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",  # WETH
+    "0xA0b86a33E6441b8c4C8C3C8C3C8C3C8C3C8C3C8C", # USDC
+]
+min_liquidity_eth = 100.0      # Minimum pool liquidity
+min_volume_24h_eth = 1000.0    # Minimum 24h volume
 ```
 
 ## 📊 Monitoring & Metrics
@@ -261,9 +279,45 @@ Pre-configured dashboards for:
 - System health
 - Ethereum network status
 
-## 🔌 Redis Events
+## 🎯 Pool Filtering
 
-Events are published to the Redis channel `mev_swaps` in JSON format:
+The MEV Relay now includes intelligent pool filtering to focus only on the most relevant and liquid pools, significantly reducing noise and improving performance.
+
+### Filtering Criteria
+
+- **Pool Addresses**: Monitor only specific pool contracts (e.g., USDC/ETH, WETH/USDT)
+- **Token Addresses**: Focus on major tokens (WETH, USDC, USDT, DAI, WBTC)
+- **Liquidity Thresholds**: Minimum pool liquidity requirements (configurable in ETH)
+- **Volume Thresholds**: Minimum 24-hour trading volume requirements
+- **Protocol Inclusion**: Support for Uniswap V2/V3, SushiSwap, and extensible to others
+- **Contract Exclusion**: Block known MEV bots and malicious contracts
+
+### Benefits
+
+- **Reduced Noise**: Focus on high-value, liquid pools only
+- **Better Performance**: Process fewer irrelevant transactions
+- **Targeted Monitoring**: Customize which pools and tokens to track
+- **MEV Protection**: Exclude known bot addresses and low-liquidity pools
+- **Configurable**: Easy to update filters without code changes
+
+### Example Configuration
+
+```toml
+[filtering]
+enabled = true
+pool_addresses = [
+    "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc7",  # USDC/ETH
+    "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8",  # USDC/ETH V3
+]
+token_addresses = [
+    "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",  # WETH
+    "0xA0b86a33E6441b8c4C8C3C8C3C8C3C8C3C8C3C8C", # USDC
+]
+min_liquidity_eth = 100.0      # Minimum 100 ETH liquidity
+min_volume_24h_eth = 1000.0    # Minimum 1000 ETH 24h volume
+```
+
+## 🔌 Redis Events
 
 ```json
 {

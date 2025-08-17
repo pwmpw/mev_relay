@@ -2,8 +2,8 @@ use crate::{
     events::domain::SwapEvent,
     infrastructure::config::Config,
     monitoring::{domain::MonitoringService, mempool::MempoolMonitor, flashbots::FlashbotsMonitor},
-    shared::Result,
 };
+use crate::Result;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{error, info, warn};
@@ -12,7 +12,7 @@ use tracing::{error, info, warn};
 pub struct MonitoringOrchestrator {
     config: Config,
     event_sender: mpsc::Sender<SwapEvent>,
-    services: Vec<Box<dyn MonitoringService>>,
+    services: Vec<Arc<tokio::sync::Mutex<Box<dyn MonitoringService>>>>,
     is_running: Arc<tokio::sync::RwLock<bool>>,
 }
 
@@ -37,7 +37,7 @@ impl MonitoringOrchestrator {
                 self.config.clone(),
                 self.event_sender.clone(),
             )?;
-            self.services.push(Box::new(mempool_monitor));
+            self.services.push(Arc::new(tokio::sync::Mutex::new(Box::new(mempool_monitor))));
             info!("Mempool monitoring service initialized");
         }
 
@@ -47,7 +47,7 @@ impl MonitoringOrchestrator {
                 self.config.clone(),
                 self.event_sender.clone(),
             )?;
-            self.services.push(Box::new(flashbots_monitor));
+            self.services.push(Arc::new(tokio::sync::Mutex::new(Box::new(flashbots_monitor))));
             info!("Flashbots monitoring service initialized");
         }
 
@@ -66,7 +66,8 @@ impl MonitoringOrchestrator {
         info!("Starting {} monitoring services", self.services.len());
 
         for service in &self.services {
-            if let Err(e) = service.start().await {
+            let mut service_guard = service.lock().await;
+            if let Err(e) = service_guard.start().await {
                 error!("Failed to start monitoring service: {}", e);
                 return Err(anyhow::anyhow!("Service startup failed: {}", e));
             }
@@ -88,7 +89,8 @@ impl MonitoringOrchestrator {
         info!("Stopping {} monitoring services", self.services.len());
 
         for service in &self.services {
-            if let Err(e) = service.stop().await {
+            let mut service_guard = service.lock().await;
+            if let Err(e) = service_guard.stop().await {
                 error!("Failed to stop monitoring service: {}", e);
                 // Continue stopping other services
             }
@@ -110,7 +112,8 @@ impl MonitoringOrchestrator {
         let mut statuses = Vec::new();
         
         for service in &self.services {
-            statuses.push(service.get_status());
+            let service_guard = service.lock().await;
+            statuses.push(service_guard.get_status());
         }
 
         Ok(statuses)
@@ -141,7 +144,7 @@ impl Clone for MonitoringOrchestrator {
         Self {
             config: self.config.clone(),
             event_sender: self.event_sender.clone(),
-            services: self.services.clone(),
+            services: Vec::new(), // Cannot clone Box<dyn Trait>
             is_running: self.is_running.clone(),
         }
     }

@@ -1,0 +1,100 @@
+# Example configuration for MEV Relay with Pool Filtering
+# Copy this file to config/production.toml or config/development.toml and customize
+
+[redis]
+url = "redis://localhost:6379"
+channel = "mev_swaps"
+pool_size = 50
+connection_timeout = 5000
+read_timeout = 3000
+
+[ethereum]
+rpc_url = "https://mainnet.infura.io/v3/YOUR_INFURA_KEY"
+ws_url = "wss://mainnet.infura.io/ws/v3/YOUR_INFURA_KEY"
+chain_id = 1
+max_block_range = 1000
+block_timeout = 30000
+
+[mempool]
+enabled = true
+rpc_url = "https://mainnet.infura.io/v3/YOUR_INFURA_KEY"
+poll_interval = 100  # milliseconds
+max_concurrent_requests = 200
+request_timeout = 10000
+batch_size = 500
+
+[flashbots]
+enabled = true
+rpc_url = "https://relay.flashbots.net"
+poll_interval = 1000  # milliseconds
+auth_header = "Bearer YOUR_FLASHBOTS_KEY"
+max_concurrent_requests = 20
+request_timeout = 15000
+
+[metrics]
+enabled = true
+host = "127.0.0.1"
+port = 9090
+
+[logging]
+level = "info"
+format = "json"
+output = "stdout"
+
+[filtering]
+enabled = true
+
+# Specific pool addresses to monitor (most liquid pools)
+pool_addresses = [
+    # Uniswap V2 - USDC/ETH (most liquid pair)
+    "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc7",
+    # Uniswap V2 - WETH/USDT
+    "0x0d4a11d5eeaac28ec3f61d100daf4d40471f1852",
+    # Uniswap V3 - USDC/ETH 0.3% (most liquid V3 pool)
+    "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8",
+    # Uniswap V3 - USDC/ETH 0.05%
+    "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640",
+    # Uniswap V3 - USDC/ETH 1%
+    "0x4e68Ccd3E89f51C3074ca5072bbAC773960dFa36",
+    # SushiSwap - USDC/ETH
+    "0x397FF1542f962076d0BFE58eA045FfA2d347ACa0",
+]
+
+# Major token addresses to monitor
+token_addresses = [
+    # Wrapped Ether
+    "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    # USDC
+    "0xA0b86a33E6441b8c4C8C3C8C3C8C3C8C3C8C3C8C",
+    # USDT
+    "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    # DAI
+    "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    # Wrapped Bitcoin
+    "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+    # Chainlink
+    "0x514910771AF9Ca656af840dff83E8264EcF986CA",
+]
+
+# Minimum liquidity threshold in ETH
+min_liquidity_eth = 100.0
+
+# Minimum 24h volume threshold in ETH
+min_volume_24h_eth = 1000.0
+
+# Contracts to exclude (MEV bots, known bad actors)
+exclude_contracts = [
+    "0x0000000000000000000000000000000000000000",  # Zero address
+    # Add known MEV bot addresses here
+    # "0x...",
+]
+
+# Protocols to include
+include_protocols = [
+    "Uniswap V2",
+    "Uniswap V3", 
+    "SushiSwap",
+    # Add other protocols as needed
+    # "Balancer",
+    # "Curve",
+] 

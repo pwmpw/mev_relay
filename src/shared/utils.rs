@@ -1,4 +1,4 @@
-use crate::types::{H160, H256};
+use crate::shared::types::{H160, H256};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -7,12 +7,12 @@ pub mod hex {
     use super::*;
 
     pub fn encode(data: &[u8]) -> String {
-        format!("0x{}", hex::encode(data))
+        format!("0x{}", ::hex::encode(data))
     }
 
     pub fn decode(s: &str) -> Result<Vec<u8>> {
         let s = s.strip_prefix("0x").unwrap_or(s);
-        hex::decode(s).map_err(|e| anyhow::anyhow!("Invalid hex string: {}", e))
+        ::hex::decode(s).map_err(|e| anyhow::anyhow!("Invalid hex string: {}", e))
     }
 
     pub fn decode_to_fixed<const N: usize>(s: &str) -> Result<[u8; N]> {
@@ -75,7 +75,7 @@ pub mod address {
     }
 
     pub fn format_address(address: &H160) -> String {
-        format!("0x{}", hex::encode(address.0))
+        format!("0x{}", ::hex::encode(&address.0))
     }
 
     pub fn format_address_checksum(address: &H160) -> String {
@@ -103,7 +103,7 @@ pub mod hash {
     use super::*;
 
     pub fn format_hash(hash: &H256) -> String {
-        format!("0x{}", hex::encode(hash.0))
+        format!("0x{}", ::hex::encode(&hash.0))
     }
 
     pub fn normalize_hash(hash: &str) -> Result<H256> {

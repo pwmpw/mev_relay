@@ -12,7 +12,7 @@ pub trait MessageBroker: Send + Sync {
     async fn publish_batch(&mut self, channel: &str, messages: &[String]) -> crate::Result<()>;
     
     /// Subscribe to a channel
-    async fn subscribe(&mut self, channel: &str) -> crate::Result<MessageReceiver>;
+    async fn subscribe(&mut self, channel: &str) -> crate::Result<Box<dyn MessageReceiver>>;
     
     /// Check connection health
     async fn health_check(&mut self) -> crate::Result<bool>;
@@ -113,7 +113,7 @@ pub trait EventPublisher: Send + Sync {
 #[async_trait]
 pub trait EventSubscriber: Send + Sync {
     /// Subscribe to swap events
-    async fn subscribe(&mut self) -> crate::Result<EventReceiver>;
+    async fn subscribe(&mut self) -> crate::Result<Box<dyn EventReceiver>>;
     
     /// Get subscriber statistics
     async fn get_stats(&mut self) -> crate::Result<SubscriberStats>;

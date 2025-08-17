@@ -2,8 +2,8 @@ use crate::{
     events::domain::SwapEvent,
     infrastructure::config::Config,
     messaging::domain::{EventSubscriber, EventReceiver, SubscriberStats},
-    shared::Result,
 };
+use crate::Result;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};

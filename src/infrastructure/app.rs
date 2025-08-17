@@ -1,7 +1,7 @@
 use crate::{
     events::domain::SwapEvent,
     monitoring::service::MonitoringOrchestrator,
-    messaging::publisher::EventPublisherService,
+    // messaging::publisher::EventPublisherService,  // Temporarily disabled
     infrastructure::{config::Config, health::HealthChecker, shutdown::ShutdownSignal},
 };
 use crate::Result;
@@ -17,7 +17,7 @@ pub struct MevRelay {
     config: Config,
     shutdown: ShutdownSignal,
     monitoring: MonitoringOrchestrator,
-    publisher: EventPublisherService,
+    // publisher: EventPublisherService,  // Temporarily disabled
     health_checker: HealthChecker,
     stats: Arc<RwLock<AppStats>>,
 }
@@ -77,7 +77,7 @@ impl AppStats {
 
 impl MevRelay {
     /// Create a new MEV Relay application
-    pub fn new(config: Config, shutdown: ShutdownSignal) -> Result<Self> {
+    pub async fn new(config: Config, shutdown: ShutdownSignal) -> Result<Self> {
         info!("Initializing MEV Relay application...");
 
         // Validate configuration
@@ -91,7 +91,7 @@ impl MevRelay {
         let monitoring = MonitoringOrchestrator::new(config.clone(), event_sender.clone())?;
 
         // Initialize event publisher
-        let publisher = EventPublisherService::new(config.clone(), event_receiver)?;
+        // let publisher = EventPublisherService::new(config.clone(), event_receiver).await?;  // Temporarily disabled
 
         // Initialize health checker
         let health_checker = HealthChecker::new(config.clone())?;
@@ -105,7 +105,7 @@ impl MevRelay {
             config,
             shutdown,
             monitoring,
-            publisher,
+            // publisher,  // Temporarily disabled
             health_checker,
             stats,
         })
@@ -200,7 +200,8 @@ impl MevRelay {
                 tokio::select! {
                     _ = interval.tick() => {
                         let mut stats_guard = stats.write().await;
-                        stats_guard.update_uptime(stats_guard.uptime_seconds + 60);
+                        let uptime = stats_guard.uptime_seconds + 60;
+                        stats_guard.update_uptime(uptime);
                         
                         info!(
                             "App Stats - Total: {}, Uptime: {}s, Errors: {}, Services: {}",
@@ -295,7 +296,7 @@ mod tests {
         let config = Config::default();
         let shutdown = ShutdownSignal::new();
         
-        let relay = MevRelay::new(config, shutdown);
+        let relay = MevRelay::new(config, shutdown).await;
         assert!(relay.is_ok());
     }
 

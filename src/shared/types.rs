@@ -122,6 +122,7 @@ mod tests {
     fn test_from_string() {
         let addr_str = "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6";
         let addr = H160::from(addr_str);
-        assert_eq!(format!("{}", addr), addr_str);
+        // The From implementation converts to lowercase, so we compare with lowercase
+        assert_eq!(format!("{}", addr), addr_str.to_lowercase());
     }
 } 

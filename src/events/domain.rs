@@ -202,8 +202,12 @@ impl SwapEvent {
             return Err("Invalid from address".to_string());
         }
 
-        if self.transaction.to.0.iter().all(|&b| b == 0) {
-            return Err("Invalid to address".to_string());
+        if let Some(to_addr) = self.transaction.to {
+            if to_addr.0.iter().all(|&b| b == 0) {
+                return Err("Invalid to address".to_string());
+            }
+        } else {
+            return Err("Missing to address".to_string());
         }
 
         if self.block_info.number == 0 {
@@ -262,9 +266,10 @@ mod tests {
         let transaction = TransactionInfo {
             hash: H256([1; 32]),
             from: H160([1; 20]),
-            to: H160([2; 20]),
+            to: Some(H160([2; 20])),
             value: 0,
             gas_price: 20_000_000_000,
+            gas_limit: 100000,
             gas_used: 100000,
             nonce: 1,
         };
@@ -312,7 +317,7 @@ mod tests {
 
         event.transaction.hash = H256([1; 32]);
         event.transaction.from = H160([1; 20]);
-        event.transaction.to = H160([2; 20]);
+        event.transaction.to = Some(H160([2; 20]));
         event.block_info.number = 1;
         
         assert!(event.validate().is_ok());

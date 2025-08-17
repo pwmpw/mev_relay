@@ -1,5 +1,5 @@
 use crate::events::domain::SwapEvent;
-use crate::shared::Result;
+use crate::Result;
 use async_trait::async_trait;
 use std::collections::HashMap;
 use tracing::{debug, info, warn};
@@ -97,11 +97,12 @@ impl EventRepository for InMemoryEventRepository {
     }
 
     async fn store_batch(&mut self, events: Vec<SwapEvent>) -> Result<()> {
+        let events_count = events.len();
         for event in events {
             self.store(event).await?;
         }
         
-        info!("Stored {} events in batch", events.len());
+        info!("Stored {} events in batch", events_count);
         Ok(())
     }
 

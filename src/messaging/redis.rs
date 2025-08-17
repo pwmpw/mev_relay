@@ -2,8 +2,8 @@ use crate::{
     events::domain::SwapEvent,
     infrastructure::config::Config,
     messaging::domain::{MessageBroker, MessageReceiver, BrokerStats, ConnectionStatus},
-    shared::Result,
 };
+use crate::Result;
 use async_trait::async_trait;
 use redis::{aio::ConnectionManager, AsyncCommands, Client as RedisClient};
 use serde_json;
@@ -26,7 +26,7 @@ pub struct RedisMessageReceiver {
 }
 
 impl RedisPublisher {
-    pub fn new(config: Config) -> Result<Self> {
+    pub async fn new(config: Config) -> Result<Self> {
         let redis_client = RedisClient::open(config.redis.url.clone())
             .map_err(|e| anyhow::anyhow!("Failed to create Redis client: {}", e))?;
 
@@ -50,7 +50,7 @@ impl RedisPublisher {
         let event_json = serde_json::to_string(event)
             .map_err(|e| anyhow::anyhow!("Failed to serialize event: {}", e))?;
 
-        let result: Result<(), redis::RedisError> = self.connection_manager
+        let result: std::result::Result<(), redis::RedisError> = self.connection_manager
             .publish(&self.config.redis.channel, event_json)
             .await;
 

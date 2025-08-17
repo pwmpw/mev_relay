@@ -2,8 +2,8 @@ use crate::{
     events::domain::SwapEvent,
     infrastructure::config::Config,
     messaging::{domain::{EventPublisher, PublisherStats}, redis::RedisPublisher},
-    shared::Result,
 };
+use crate::Result;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{error, info, warn};
@@ -18,8 +18,8 @@ pub struct EventPublisherService {
 }
 
 impl EventPublisherService {
-    pub fn new(config: Config, event_receiver: mpsc::Receiver<SwapEvent>) -> Result<Self> {
-        let redis_publisher = RedisPublisher::new(config.clone())?;
+    pub async fn new(config: Config, event_receiver: mpsc::Receiver<SwapEvent>) -> Result<Self> {
+        let redis_publisher = RedisPublisher::new(config.clone()).await?;
         let stats = Arc::new(tokio::sync::RwLock::new(PublisherStats::new()));
 
         Ok(Self {

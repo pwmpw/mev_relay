@@ -75,7 +75,7 @@ impl ProtocolRegistry {
         }
 
         let method_signature = &input_data[..10];
-        protocol.swap_signatures.contains(&method_signature.to_string())
+        protocol.swap_signatures.iter().any(|sig| sig.starts_with(method_signature))
     }
 
     /// Register default protocols

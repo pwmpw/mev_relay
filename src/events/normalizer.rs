@@ -1,5 +1,5 @@
 use crate::events::domain::SwapEvent;
-use crate::shared::Result;
+use crate::Result;
 use tracing::{debug, info, warn};
 
 /// Event normalizer for ensuring consistency and standardization
@@ -78,8 +78,12 @@ impl EventNormalizer {
             return Err(anyhow::anyhow!("Invalid from address"));
         }
 
-        if event.transaction.to.0.iter().all(|&b| b == 0) {
-            return Err(anyhow::anyhow!("Invalid to address"));
+        if let Some(to_addr) = event.transaction.to {
+            if to_addr.0.iter().all(|&b| b == 0) {
+                return Err(anyhow::anyhow!("Invalid to address"));
+            }
+        } else {
+            return Err(anyhow::anyhow!("Missing to address"));
         }
 
         if event.swap_details.token_in.0.iter().all(|&b| b == 0) {

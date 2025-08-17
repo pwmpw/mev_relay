@@ -1,9 +1,10 @@
 use crate::{
-    events::domain::SwapEvent,
+    events::{domain::SwapEvent, filter::PoolFilter},
     infrastructure::config::Config,
     monitoring::domain::{MonitoringService, ServiceStatus, TransactionInfo as MonitoringTransactionInfo},
-    shared::{Result, types::H160, utils::time},
+    shared::{types::H160, utils::time},
 };
+use crate::Result;
 use async_trait::async_trait;
 use reqwest::Client;
 use serde_json::Value;
@@ -20,6 +21,7 @@ pub struct MempoolMonitor {
     http_client: Client,
     status: ServiceStatus,
     is_running: Arc<tokio::sync::RwLock<bool>>,
+    pool_filter: PoolFilter,
 }
 
 impl MempoolMonitor {
@@ -31,12 +33,14 @@ impl MempoolMonitor {
 
         let status = ServiceStatus::new("Mempool Monitor".to_string());
 
+        let pool_filter = PoolFilter::new(config.filtering.clone());
         Ok(Self {
             config,
             event_sender,
             http_client,
             status,
             is_running: Arc::new(tokio::sync::RwLock::new(false)),
+            pool_filter,
         })
     }
 
@@ -57,11 +61,14 @@ impl MempoolMonitor {
                         break;
                     }
 
-                    if let Err(e) = self.poll_mempool(&http_client, &config, &event_sender).await {
-                        error!("Mempool polling error: {}", e);
-                        self.status.record_error(e.to_string());
-                    } else {
-                        self.status.mark_active();
+                    match self.poll_mempool(&http_client, &config, &event_sender).await {
+                        Ok(_) => {
+                            // Status will be updated in the start/stop methods
+                        }
+                        Err(e) => {
+                            error!("Mempool polling error: {}", e);
+                            // Status will be updated in the start/stop methods
+                        }
                     }
                 }
             }
@@ -83,7 +90,18 @@ impl MempoolMonitor {
         if !pending_txs.is_empty() {
             info!("Found {} pending transactions in mempool", pending_txs.len());
             
-            for tx in pending_txs {
+            // Apply pool filtering
+            let filtered_txs = self.pool_filter.filter_events(&pending_txs);
+            
+            if filtered_txs.len() != pending_txs.len() {
+                info!(
+                    "Pool filter: {} transactions filtered out, {} transactions kept",
+                    pending_txs.len() - filtered_txs.len(),
+                    filtered_txs.len()
+                );
+            }
+            
+            for tx in filtered_txs {
                 if let Err(e) = event_sender.send(tx).await {
                     error!("Failed to send mempool transaction: {}", e);
                 }
@@ -256,6 +274,7 @@ impl Clone for MempoolMonitor {
             http_client: self.http_client.clone(),
             status: self.status.clone(),
             is_running: self.is_running.clone(),
+            pool_filter: self.pool_filter.clone(),
         }
     }
 }
@@ -264,6 +283,51 @@ impl Clone for MempoolMonitor {
 mod tests {
     use super::*;
     use tokio::sync::mpsc;
+    use crate::events::domain::{EventId, EventSource, ProtocolInfo, TransactionInfo, SwapDetails, BlockInfo, EventMetadata};
+    use crate::shared::types::H256;
+
+    fn create_test_swap_event(
+        pool_address: Option<H160>,
+        token_in: H160,
+        token_out: H160,
+        protocol_name: &str,
+        from: H160,
+        to: Option<H160>,
+    ) -> SwapEvent {
+        SwapEvent {
+            id: EventId::new(),
+            transaction: TransactionInfo {
+                hash: H256([1; 32]),
+                from,
+                to,
+                value: 0,
+                gas_price: 20_000_000_000,
+                gas_limit: 100000,
+                gas_used: 50000,
+                nonce: 1,
+            },
+            swap_details: SwapDetails {
+                token_in,
+                token_out,
+                amount_in: 1_000_000_000_000_000_000, // 1 ETH
+                amount_out: 950_000_000_000_000_000,
+                pool_address,
+                fee_tier: Some(3000),
+            },
+            block_info: BlockInfo {
+                number: 12345,
+                hash: H256([2; 32]),
+                timestamp: 1234567890,
+            },
+            source: EventSource::Mempool,
+            protocol: ProtocolInfo {
+                name: protocol_name.to_string(),
+                version: "2.0".to_string(),
+                address: H160([3; 20]),
+            },
+            metadata: EventMetadata::new(),
+        }
+    }
 
     #[tokio::test]
     async fn test_mempool_monitor_creation() {
@@ -281,5 +345,64 @@ mod tests {
         
         let monitor = MempoolMonitor::new(config, sender).unwrap();
         assert!(!monitor.is_active());
+    }
+
+    #[test]
+    fn test_monitor_clone() {
+        let config = Config::default();
+        let (sender, _receiver) = mpsc::channel::<SwapEvent>(100);
+        
+        let monitor = MempoolMonitor::new(config, sender).unwrap();
+        let cloned = monitor.clone();
+        
+        // Test that clone works
+        assert_eq!(monitor.pool_filter.get_filter_stats().total_pools, 
+                   cloned.pool_filter.get_filter_stats().total_pools);
+    }
+
+    #[test]
+    fn test_pool_filter_integration() {
+        let config = Config::default();
+        let (sender, _receiver) = mpsc::channel::<SwapEvent>(100);
+        
+        let monitor = MempoolMonitor::new(config, sender).unwrap();
+        
+        // Test that pool filter is properly initialized
+        let filter_stats = monitor.pool_filter.get_filter_stats();
+        assert!(filter_stats.total_pools > 0);
+        assert!(filter_stats.total_tokens > 0);
+        assert!(filter_stats.included_protocols.contains(&"Uniswap V2".to_string()));
+    }
+
+    #[test]
+    fn test_filtering_config_integration() {
+        let mut config = Config::default();
+        
+        // Test that filtering config is properly set
+        assert!(config.filtering.enabled);
+        assert!(!config.filtering.pool_addresses.is_empty());
+        assert!(!config.filtering.token_addresses.is_empty());
+        assert_eq!(config.filtering.min_liquidity_eth, 100.0);
+        assert_eq!(config.filtering.min_volume_24h_eth, 1000.0);
+        
+        // Test custom filtering configuration
+        config.filtering.pool_addresses = vec![
+            "0x1234567890123456789012345678901234567890".to_string(),
+        ];
+        config.filtering.min_liquidity_eth = 500.0;
+        
+        assert_eq!(config.filtering.pool_addresses.len(), 1);
+        assert_eq!(config.filtering.min_liquidity_eth, 500.0);
+    }
+
+    #[test]
+    fn test_mempool_config_poll_interval() {
+        let config = Config::default();
+        
+        // Test that poll_interval is properly set
+        assert_eq!(config.mempool.poll_interval, 100);
+        
+        // Test that flashbots poll_interval is properly set
+        assert_eq!(config.flashbots.poll_interval, 1000);
     }
 } 

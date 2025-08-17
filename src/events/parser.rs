@@ -22,7 +22,7 @@ impl EventParser {
     pub fn parse_mempool_transaction(
         &self,
         tx_data: &Value,
-        block_info: &crate::monitoring::domain::BlockInfo,
+        block_info: &crate::events::domain::BlockInfo,
     ) -> Result<Vec<SwapEvent>> {
         let mut events = Vec::new();
 
@@ -48,7 +48,7 @@ impl EventParser {
     pub fn parse_flashbots_bundle(
         &self,
         bundle_data: &Value,
-        block_info: &crate::monitoring::domain::BlockInfo,
+        block_info: &crate::events::domain::BlockInfo,
     ) -> Result<Vec<SwapEvent>> {
         let mut events = Vec::new();
 
@@ -122,7 +122,7 @@ impl EventParser {
     fn create_swap_event(
         &self,
         transaction_info: crate::events::domain::TransactionInfo,
-        block_info: &crate::monitoring::domain::BlockInfo,
+        block_info: &crate::events::domain::BlockInfo,
         source: crate::events::domain::EventSource,
         tx_data: &Value,
     ) -> Result<Option<SwapEvent>> {
@@ -220,7 +220,12 @@ impl EventParser {
             .ok_or_else(|| anyhow::anyhow!("Missing {} field", field))?;
 
         let value = if value_str.starts_with("0x") {
-            u128::from_str_radix(value_str, 16)?
+            let hex_str = value_str.strip_prefix("0x").unwrap();
+            if hex_str.is_empty() {
+                0
+            } else {
+                u128::from_str_radix(hex_str, 16)?
+            }
         } else {
             value_str.parse::<u128>()?
         };
@@ -235,7 +240,12 @@ impl EventParser {
             .ok_or_else(|| anyhow::anyhow!("Missing {} field", field))?;
 
         let gas_price = if gas_price_str.starts_with("0x") {
-            u128::from_str_radix(gas_price_str, 16)?
+            let hex_str = gas_price_str.strip_prefix("0x").unwrap();
+            if hex_str.is_empty() {
+                0
+            } else {
+                u128::from_str_radix(hex_str, 16)?
+            }
         } else {
             gas_price_str.parse::<u128>()?
         };
@@ -245,9 +255,20 @@ impl EventParser {
 
     /// Extract u64 value from transaction data
     fn extract_u64(&self, tx_data: &Value, field: &str) -> Result<u64> {
-        let value = tx_data.get(field)
-            .and_then(|v| v.as_u64())
+        let value_str = tx_data.get(field)
+            .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("Missing {} field", field))?;
+
+        let value = if value_str.starts_with("0x") {
+            let hex_str = value_str.strip_prefix("0x").unwrap();
+            if hex_str.is_empty() {
+                0
+            } else {
+                u64::from_str_radix(hex_str, 16)?
+            }
+        } else {
+            value_str.parse::<u64>()?
+        };
 
         Ok(value)
     }
@@ -289,16 +310,15 @@ mod tests {
             "input": "0x38ed173900000000000000000000000000000000000000000000000000000000"
         });
 
-        let block_info = crate::monitoring::domain::BlockInfo {
+        let block_info = crate::events::domain::BlockInfo {
             number: 12345,
             hash: H256([1; 32]),
             timestamp: 1234567890,
-            transactions: vec![],
         };
 
         let events = parser.parse_mempool_transaction(&tx_data, &block_info).unwrap();
-        // Should return empty vector since this is a placeholder implementation
-        assert_eq!(events.len(), 0);
+        // The parser should detect this as a swap transaction and return 1 event
+        assert_eq!(events.len(), 1);
     }
 
     #[test]

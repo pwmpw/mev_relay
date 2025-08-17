@@ -10,17 +10,6 @@ RUSTUP := rustup
 DOCKER := docker
 DOCKER_COMPOSE := docker-compose
 
-# Colors for output
-RED := \033[0;31m
-GREEN := \033[0;32m
-YELLOW := \033[0;33m
-BLUE := \033[0;34m
-PURPLE := \033[0;35m
-CYAN := \033[0;36m
-WHITE := \033[0;37m
-BOLD := \033[1m
-RESET := \033[0m
-
 # Build configuration
 BUILD_TYPE ?= release
 FEATURES ?= 
@@ -49,6 +38,9 @@ DOCKER_TAG := $(VERSION)
 DOCKER_FULL_NAME := $(DOCKER_IMAGE):$(DOCKER_TAG)
 DOCKER_LATEST := $(DOCKER_IMAGE):latest
 
+# Detect Docker Compose version and set appropriate command
+DOCKER_COMPOSE := $(shell if command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; else echo "docker compose"; fi)
+
 # Default target
 .DEFAULT_GOAL := help
 
@@ -62,272 +54,279 @@ DOCKER_LATEST := $(DOCKER_IMAGE):latest
 
 # Help target
 help: ## Show this help message
-	@echo "$(BOLD)$(CYAN)$(PROJECT_NAME) - MEV Relay Build System$(RESET)"
-	@echo "$(BOLD)Version:$(RESET) $(VERSION)"
-	@echo "$(BOLD)Rust Version:$(RESET) $(RUST_VERSION)"
+	@echo "$(PROJECT_NAME) - MEV Relay Build System"
+	@echo "Version: $(VERSION)"
+	@echo "Rust Version: $(RUST_VERSION)"
 	@echo ""
-	@echo "$(BOLD)Available commands:$(RESET)"
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  $(GREEN)%-20s$(RESET) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@echo "Available commands:"
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@echo ""
-	@echo "$(BOLD)Build Configuration:$(RESET)"
+	@echo "Build Configuration:"
 	@echo "  BUILD_TYPE=$(BUILD_TYPE)"
 	@echo "  FEATURES=$(FEATURES)"
 	@echo "  CARGO_FLAGS=$(CARGO_FLAGS)"
 
 # Dependency verification
 verify-deps: ## Verify all dependencies are installed
-	@echo "$(BLUE)Verifying dependencies...$(RESET)"
+	@echo "Verifying dependencies..."
 	@$(MAKE) verify-rust
 	@$(MAKE) verify-docker
 	@$(MAKE) verify-tools
-	@echo "$(GREEN)✓ All dependencies verified$(RESET)"
+	@echo "✓ All dependencies verified"
 
 verify-rust: ## Verify Rust toolchain
-	@echo "$(BLUE)Checking Rust toolchain...$(RESET)"
-	@command -v rustc >/dev/null 2>&1 || { echo "$(RED)✗ Rust is not installed$(RESET)"; exit 1; }
-	@command -v cargo >/dev/null 2>&1 || { echo "$(RED)✗ Cargo is not installed$(RESET)"; exit 1; }
-	@command -v rustup >/dev/null 2>&1 || { echo "$(RED)✗ Rustup is not installed$(RESET)"; exit 1; }
-	@echo "$(GREEN)✓ Rust toolchain verified$(RESET)"
+	@echo "Checking Rust toolchain..."
+	@command -v rustc >/dev/null 2>&1 || { echo "✗ Rust is not installed"; exit 1; }
+	@command -v cargo >/dev/null 2>&1 || { echo "✗ Cargo is not installed"; exit 1; }
+	@command -v rustup >/dev/null 2>&1 || { echo "✗ Rustup is not installed"; exit 1; }
+	@echo "✓ Rust toolchain verified"
 
 verify-docker: ## Verify Docker installation
-	@echo "$(BLUE)Checking Docker...$(RESET)"
-	@command -v docker >/dev/null 2>&1 || { echo "$(RED)✗ Docker is not installed$(RESET)"; exit 1; }
-	@command -v docker-compose >/dev/null 2>&1 || { echo "$(RED)✗ Docker Compose is not installed$(RESET)"; exit 1; }
-	@docker version >/dev/null 2>&1 || { echo "$(RED)✗ Docker daemon is not running$(RESET)"; exit 1; }
-	@echo "$(GREEN)✓ Docker verified$(RESET)"
+	@echo "Checking Docker..."
+	@command -v docker >/dev/null 2>&1 || { echo "✗ Docker is not installed"; exit 1; }
+	@if command -v docker-compose >/dev/null 2>&1; then \
+		echo "Using docker-compose..."; \
+	elif docker compose version >/dev/null 2>&1; then \
+		echo "Using docker compose..."; \
+	else \
+		echo "✗ Docker Compose is not available"; \
+		exit 1; \
+	fi
+	@docker version >/dev/null 2>&1 || { echo "✗ Docker daemon is not running"; exit 1; }
+	@echo "✓ Docker verified"
 
 verify-tools: ## Verify additional tools
-	@echo "$(BLUE)Checking additional tools...$(RESET)"
-	@command -v make >/dev/null 2>&1 || { echo "$(RED)✗ Make is not installed$(RESET)"; exit 1; }
-	@command -v git >/dev/null 2>&1 || { echo "$(RED)✗ Git is not installed$(RESET)"; exit 1; }
-	@echo "$(GREEN)✓ Tools verified$(RESET)"
+	@echo "Checking additional tools..."
+	@command -v make >/dev/null 2>&1 || { echo "✗ Make is not installed"; exit 1; }
+	@command -v git >/dev/null 2>&1 || { echo "✗ Git is not installed"; exit 1; }
+	@echo "✓ Tools verified"
 
 # Environment setup
 setup-env: ## Setup development environment
-	@echo "$(BLUE)Setting up development environment...$(RESET)"
+	@echo "Setting up development environment..."
 	@mkdir -p $(LOGS_DIR)
 	@mkdir -p $(DIST_DIR)
 	@mkdir -p $(MONITORING_DIR)/data
-	@echo "$(GREEN)✓ Environment setup complete$(RESET)"
+	@echo "✓ Environment setup complete"
 
 # Build targets
 build: verify-deps setup-env ## Build the project
-	@echo "$(BLUE)Building $(PROJECT_NAME) in $(BUILD_TYPE) mode...$(RESET)"
+	@echo "Building $(PROJECT_NAME) in $(BUILD_TYPE) mode..."
 	@$(CARGO) build $(CARGO_FLAGS)
-	@echo "$(GREEN)✓ Build complete$(RESET)"
+	@echo "✓ Build complete"
 
 build-all: ## Build all targets (debug, release)
-	@echo "$(BLUE)Building all targets...$(RESET)"
+	@echo "Building all targets..."
 	@$(MAKE) BUILD_TYPE=debug build
 	@$(MAKE) BUILD_TYPE=release build
-	@echo "$(GREEN)✓ All builds complete$(RESET)"
+	@echo "✓ All builds complete"
 
 # Test targets
 test: verify-deps ## Run all tests
-	@echo "$(BLUE)Running tests...$(RESET)"
+	@echo "Running tests..."
 	@$(CARGO) test $(CARGO_FLAGS)
-	@echo "$(GREEN)✓ Tests complete$(RESET)"
+	@echo "✓ Tests complete"
 
 test-all: ## Run all tests with different configurations
-	@echo "$(BLUE)Running comprehensive tests...$(RESET)"
+	@echo "Running comprehensive tests..."
 	@$(MAKE) test
 	@$(MAKE) integration-test
 	@$(MAKE) performance-test
-	@echo "$(GREEN)✓ All tests complete$(RESET)"
+	@echo "✓ All tests complete"
 
 integration-test: ## Run integration tests
-	@echo "$(BLUE)Running integration tests...$(RESET)"
+	@echo "Running integration tests..."
 	@$(CARGO) test --test integration $(CARGO_FLAGS)
-	@echo "$(GREEN)✓ Integration tests complete$(RESET)"
+	@echo "✓ Integration tests complete"
 
 # Clean targets
 clean: ## Clean build artifacts
-	@echo "$(BLUE)Cleaning build artifacts...$(RESET)"
+	@echo "Cleaning build artifacts..."
 	@$(CARGO) clean
-	@echo "$(GREEN)✓ Clean complete$(RESET)"
+	@echo "✓ Clean complete"
 
 clean-all: ## Clean all artifacts including Docker
-	@echo "$(BLUE)Cleaning all artifacts...$(RESET)"
+	@echo "Cleaning all artifacts..."
 	@$(MAKE) clean
 	@$(MAKE) docker-clean
 	@$(MAKE) clean-logs
-	@echo "$(GREEN)✓ Full clean complete$(RESET)"
+	@echo "✓ Full clean complete"
 
 clean-logs: ## Clean log files
-	@echo "$(BLUE)Cleaning logs...$(RESET)"
+	@echo "Cleaning logs..."
 	@rm -rf $(LOGS_DIR)/*
-	@echo "$(GREEN)✓ Logs cleaned$(RESET)"
+	@echo "✓ Logs cleaned"
 
 # Run targets
 run: build ## Run the application
-	@echo "$(BLUE)Running $(PROJECT_NAME)...$(RESET)"
+	@echo "Running $(PROJECT_NAME)..."
 	@./target/$(BUILD_TYPE)/$(PROJECT_NAME)
 
 # Docker targets
 docker-build: verify-docker ## Build Docker image
-	@echo "$(BLUE)Building Docker image...$(RESET)"
+	@echo "Building Docker image..."
 	@$(DOCKER) build -t $(DOCKER_FULL_NAME) -t $(DOCKER_LATEST) .
-	@echo "$(GREEN)✓ Docker image built: $(DOCKER_FULL_NAME)$(RESET)"
+	@echo "✓ Docker image built: $(DOCKER_FULL_NAME)"
 
 docker-run: verify-docker ## Start all services with docker-compose
-	@echo "$(BLUE)Starting services...$(RESET)"
+	@echo "Starting services..."
 	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) up -d
-	@echo "$(GREEN)✓ Services started$(RESET)"
+	@echo "✓ Services started"
 
 docker-stop: verify-docker ## Stop all services
-	@echo "$(BLUE)Stopping services...$(RESET)"
+	@echo "Stopping services..."
 	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) down
-	@echo "$(GREEN)✓ Services stopped$(RESET)"
+	@echo "✓ Services stopped"
 
 docker-logs: verify-docker ## Show logs from all services
-	@echo "$(BLUE)Showing service logs...$(RESET)"
+	@echo "Showing service logs..."
 	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) logs -f
 
 docker-clean: verify-docker ## Clean Docker artifacts
-	@echo "$(BLUE)Cleaning Docker artifacts...$(RESET)"
+	@echo "Cleaning Docker artifacts..."
 	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) down -v --remove-orphans
 	@$(DOCKER) system prune -f
-	@echo "$(GREEN)✓ Docker cleaned$(RESET)"
+	@echo "✓ Docker cleaned"
 
 # Code quality targets
 lint: verify-deps ## Run clippy linter
-	@echo "$(BLUE)Running linter...$(RESET)"
+	@echo "Running linter..."
 	@$(CARGO) clippy $(CARGO_FLAGS) -- -D warnings
-	@echo "$(GREEN)✓ Linting complete$(RESET)"
+	@echo "✓ Linting complete"
 
 format: verify-deps ## Format code with rustfmt
-	@echo "$(BLUE)Formatting code...$(RESET)"
+	@echo "Formatting code..."
 	@$(CARGO) fmt --all
-	@echo "$(GREEN)✓ Formatting complete$(RESET)"
+	@echo "✓ Formatting complete"
 
 check: verify-deps ## Check code without building
-	@echo "$(BLUE)Checking code...$(RESET)"
+	@echo "Checking code..."
 	@$(CARGO) check $(CARGO_FLAGS)
-	@echo "$(GREEN)✓ Code check complete$(RESET)"
+	@echo "✓ Code check complete"
 
 # Development setup
 install-dev: verify-deps ## Install development dependencies
-	@echo "$(BLUE)Installing development dependencies...$(RESET)"
+	@echo "Installing development dependencies..."
 	@$(RUSTUP) component add rustfmt
 	@$(RUSTUP) component add clippy
 	@$(CARGO) install cargo-audit
 	@$(CARGO) install cargo-outdated
-	@echo "$(GREEN)✓ Development dependencies installed$(RESET)"
+	@echo "✓ Development dependencies installed"
 
 dev-setup: install-dev setup-env ## Complete development environment setup
-	@echo "$(BLUE)Setting up development environment...$(RESET)"
-	@echo "$(GREEN)✓ Development environment setup complete!$(RESET)"
-	@echo "$(CYAN)Run 'make docker-run' to start services$(RESET)"
-	@echo "$(CYAN)Run 'make build' to build the project$(RESET)"
-	@echo "$(CYAN)Run 'make test' to run tests$(RESET)"
+	@echo "Setting up development environment..."
+	@echo "✓ Development environment setup complete!"
+	@echo "Run 'make docker-run' to start services"
+	@echo "Run 'make build' to build the project"
+	@echo "Run 'make test' to run tests"
 
 # Security and quality
 audit: verify-deps ## Run security audit
-	@echo "$(BLUE)Running security audit...$(RESET)"
+	@echo "Running security audit..."
 	@$(CARGO) audit
-	@echo "$(GREEN)✓ Security audit complete$(RESET)"
+	@echo "✓ Security audit complete"
 
 security-scan: ## Run comprehensive security scan
-	@echo "$(BLUE)Running security scan...$(RESET)"
+	@echo "Running security scan..."
 	@$(MAKE) audit
 	@$(MAKE) dependency-check
-	@echo "$(GREEN)✓ Security scan complete$(RESET)"
+	@echo "✓ Security scan complete"
 
 dependency-check: ## Check for outdated dependencies
-	@echo "$(BLUE)Checking dependencies...$(RESET)"
+	@echo "Checking dependencies..."
 	@$(CARGO) outdated
-	@echo "$(GREEN)✓ Dependency check complete$(RESET)"
+	@echo "✓ Dependency check complete"
 
 # Performance and testing
 bench: verify-deps ## Performance benchmark
-	@echo "$(BLUE)Running benchmarks...$(RESET)"
+	@echo "Running benchmarks..."
 	@$(CARGO) bench
-	@echo "$(GREEN)✓ Benchmarks complete$(RESET)"
+	@echo "✓ Benchmarks complete"
 
 performance-test: ## Run performance tests
-	@echo "$(BLUE)Running performance tests...$(RESET)"
+	@echo "Running performance tests..."
 	@$(CARGO) test --test performance $(CARGO_FLAGS)
-	@echo "$(GREEN)✓ Performance tests complete$(RESET)"
+	@echo "✓ Performance tests complete"
 
 load-test: ## Run load tests
-	@echo "$(BLUE)Running load tests...$(RESET)"
-	@echo "$(YELLOW)Load testing not yet implemented$(RESET)"
-	@echo "$(GREEN)✓ Load test placeholder complete$(RESET)"
+	@echo "Running load tests..."
+	@echo "Load testing not yet implemented"
+	@echo "✓ Load test placeholder complete"
 
 # Documentation
 doc: verify-deps ## Generate documentation
-	@echo "$(BLUE)Generating documentation...$(RESET)"
+	@echo "Generating documentation..."
 	@$(CARGO) doc --open
-	@echo "$(GREEN)✓ Documentation generated$(RESET)"
+	@echo "✓ Documentation generated"
 
 # Maintenance
 outdated: verify-deps ## Check for outdated dependencies
-	@echo "$(BLUE)Checking for outdated dependencies...$(RESET)"
+	@echo "Checking for outdated dependencies..."
 	@$(CARGO) outdated
-	@echo "$(GREEN)✓ Outdated check complete$(RESET)"
+	@echo "✓ Outdated check complete"
 
 update: verify-deps ## Update dependencies
-	@echo "$(BLUE)Updating dependencies...$(RESET)"
+	@echo "Updating dependencies..."
 	@$(CARGO) update
-	@echo "$(GREEN)✓ Dependencies updated$(RESET)"
+	@echo "✓ Dependencies updated"
 
 # Production targets
 prod-build: clean ## Production build
-	@echo "$(BLUE)Building production image...$(RESET)"
+	@echo "Building production image..."
 	@$(DOCKER) build --target production -t $(PROJECT_NAME):prod .
-	@echo "$(GREEN)✓ Production build complete$(RESET)"
+	@echo "✓ Production build complete"
 
 deploy: prod-build ## Deploy to production
-	@echo "$(BLUE)Deploying to production...$(RESET)"
-	@echo "$(YELLOW)Deployment not yet implemented$(RESET)"
-	@echo "$(GREEN)✓ Deployment placeholder complete$(RESET)"
+	@echo "Deploying to production..."
+	@echo "Deployment not yet implemented"
+	@echo "✓ Deployment placeholder complete"
 
 rollback: ## Rollback deployment
-	@echo "$(BLUE)Rolling back deployment...$(RESET)"
-	@echo "$(YELLOW)Rollback not yet implemented$(RESET)"
-	@echo "$(GREEN)✓ Rollback placeholder complete$(RESET)"
+	@echo "Rolling back deployment..."
+	@echo "Rollback not yet implemented"
+	@echo "✓ Rollback placeholder complete"
 
 # Configuration management
 backup-config: ## Backup configuration files
-	@echo "$(BLUE)Backing up configuration...$(RESET)"
+	@echo "Backing up configuration..."
 	@mkdir -p $(DIST_DIR)/backups
 	@tar -czf $(DIST_DIR)/backups/config-$(shell date +%Y%m%d-%H%M%S).tar.gz $(CONFIG_DIR)/*
-	@echo "$(GREEN)✓ Configuration backed up$(RESET)"
+	@echo "✓ Configuration backed up"
 
 restore-config: ## Restore configuration from backup
-	@echo "$(BLUE)Restoring configuration...$(RESET)"
-	@echo "$(YELLOW)Please specify backup file: make restore-config BACKUP_FILE=filename$(RESET)"
+	@echo "Restoring configuration..."
+	@echo "Please specify backup file: make restore-config BACKUP_FILE=filename"
 	@if [ -n "$(BACKUP_FILE)" ]; then \
 		tar -xzf $(DIST_DIR)/backups/$(BACKUP_FILE) -C .; \
-		echo "$(GREEN)✓ Configuration restored$(RESET)"; \
+		echo "✓ Configuration restored"; \
 	else \
-		echo "$(RED)✗ No backup file specified$(RESET)"; \
+		echo "✗ No backup file specified"; \
 		exit 1; \
 	fi
 
 # Monitoring and health
 health-check: ## Check system health
-	@echo "$(BLUE)Checking system health...$(RESET)"
+	@echo "Checking system health..."
 	@$(MAKE) verify-deps
 	@$(MAKE) check
-	@echo "$(GREEN)✓ System health check complete$(RESET)"
+	@echo "✓ System health check complete"
 
 status: ## Show system status
-	@echo "$(BLUE)System Status:$(RESET)"
-	@echo "$(CYAN)Project:$(RESET) $(PROJECT_NAME) v$(VERSION)"
-	@echo "$(CYAN)Rust:$(RESET) $(RUST_VERSION)"
-	@echo "$(CYAN)Build Type:$(RESET) $(BUILD_TYPE)"
-	@echo "$(CYAN)Features:$(RESET) $(FEATURES)"
-	@echo "$(CYAN)Docker:$(RESET) $(shell docker version --format '{{.Server.Version}}' 2>/dev/null || echo 'Not running')"
-	@echo "$(CYAN)Services:$(RESET) $(shell docker-compose ps --services 2>/dev/null | wc -l || echo '0') running"
+	@echo "System Status:"
+	@echo "Project: $(PROJECT_NAME) v$(VERSION)"
+	@echo "Rust: $(RUST_VERSION)"
+	@echo "Build Type: $(BUILD_TYPE)"
+	@echo "Features: $(FEATURES)"
+	@echo "Docker: $(shell docker version --format '{{.Server.Version}}' 2>/dev/null || echo 'Not running')"
+	@echo "Services: $(shell docker-compose ps --services 2>/dev/null | wc -l || echo '0') running"
 
 # Quick start
 quick-start: docker-run ## Quick start for development
-	@echo "$(BLUE)Starting development environment...$(RESET)"
-	@echo "$(YELLOW)Waiting for services to start...$(RESET)"
+	@echo "Starting development environment..."
+	@echo "Waiting for services to start..."
 	@sleep 15
-	@echo "$(GREEN)✓ Development environment ready!$(RESET)"
-	@echo "$(CYAN)Access points:$(RESET)"
+	@echo "✓ Development environment ready!"
+	@echo "Access points:"
 	@echo "  - Metrics: http://localhost:9090"
 	@echo "  - Grafana: http://localhost:3000 (admin/admin)"
 	@echo "  - Prometheus: http://localhost:9091"
@@ -336,11 +335,11 @@ quick-start: docker-run ## Quick start for development
 
 # Logs
 logs: ## Show application logs
-	@echo "$(BLUE)Showing application logs...$(RESET)"
+	@echo "Showing application logs..."
 	@if [ -d "$(LOGS_DIR)" ]; then \
-		tail -f $(LOGS_DIR)/*.log 2>/dev/null || echo "$(YELLOW)No log files found$(RESET)"; \
+		tail -f $(LOGS_DIR)/*.log 2>/dev/null || echo "No log files found"; \
 	else \
-		echo "$(YELLOW)Logs directory not found$(RESET)"; \
+		echo "Logs directory not found"; \
 	fi
 
 # Error handling

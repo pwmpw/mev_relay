@@ -1,0 +1,72 @@
+# Test configuration for MEV Relay
+# Used specifically for running tests
+
+[redis]
+url = "redis://localhost:6379"
+channel = "mev_swaps_test"
+pool_size = 5
+connection_timeout = 1000
+read_timeout = 500
+
+[ethereum]
+rpc_url = "http://localhost:8545"
+ws_url = "ws://localhost:8546"
+chain_id = 1
+max_block_range = 100
+block_timeout = 5000
+
+[mempool]
+enabled = true
+rpc_url = "http://localhost:8545"
+poll_interval = 1000  # 1 second for tests
+max_concurrent_requests = 10
+request_timeout = 5000
+batch_size = 50
+
+[flashbots]
+enabled = false  # Disabled for tests
+rpc_url = "https://relay.flashbots.net"
+poll_interval = 5000
+auth_header = ""
+max_concurrent_requests = 5
+request_timeout = 10000
+
+[metrics]
+enabled = false  # Disabled for tests
+host = "127.0.0.1"
+port = 9091
+
+[logging]
+level = "warn"  # Reduced logging for tests
+format = "json"
+output = "stdout"
+
+[filtering]
+enabled = true
+
+# Minimal pool addresses for testing
+pool_addresses = [
+    "0x1234567890123456789012345678901234567890",
+    "0x0987654321098765432109876543210987654321",
+]
+
+# Minimal token addresses for testing
+token_addresses = [
+    "0x1111111111111111111111111111111111111111",
+    "0x2222222222222222222222222222222222222222",
+]
+
+# Lower thresholds for testing
+min_liquidity_eth = 10.0
+min_volume_24h_eth = 100.0
+
+# Minimal exclude contracts for testing
+exclude_contracts = [
+    "0x0000000000000000000000000000000000000000",
+]
+
+# Minimal protocols for testing
+include_protocols = [
+    "Test Protocol",
+    "Uniswap V2",
+] 
