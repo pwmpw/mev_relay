@@ -132,7 +132,6 @@ The project has been recently refactored to implement a clean **Domain-Driven De
 
 ### ✅ What's Been Cleaned Up
 
-- **Removed old monolithic files**: `src/core.rs`, `src/config.rs`, `src/error.rs`, `src/events.rs`, `src/flashbots.rs`, `src/mempool.rs`, `src/redis_pubsub.rs`, `src/shutdown.rs`, `src/metrics.rs`, `src/types.rs`, `src/utils.rs`
 - **Implemented proper domain separation**: Each domain now has its own module with clear responsibilities
 - **Added trait-based abstractions**: Services now implement traits for better testability and flexibility
 - **Centralized configuration**: All config is now managed through the infrastructure domain
@@ -144,10 +143,14 @@ The project has been recently refactored to implement a clean **Domain-Driven De
 - **Domain Models**: ✅ Rich domain entities with business logic
 - **Monitoring Services**: ✅ Mempool and Flashbots monitoring with trait abstractions
 - **Event Processing**: ✅ Parser, normalizer, and protocol detection
-- **Pool Filtering**: ✅ Intelligent filtering by pool, token, liquidity, and volume
-- **Messaging**: ✅ Redis pub/sub with publisher/subscriber services
-- **Infrastructure**: ✅ Configuration, logging, metrics, and health checks
-- **Testing**: 🔄 Unit tests implemented, integration tests in progress
+- **Subgraph Integration**: ✅ Token and pool metadata caching from The Graph
+- **Redis Integration**: ✅ Async pub/sub with connection pooling and buffering
+- **Configuration**: ✅ TOML-based config with environment variable overrides
+- **Logging**: ✅ Structured JSON logging with configurable levels
+- **Metrics**: ✅ Prometheus metrics with Grafana dashboards
+- **Health Checks**: ✅ Service health monitoring and status reporting
+- **Error Handling**: ✅ Comprehensive error types and propagation
+- **Testing**: ✅ Unit tests, integration tests, and testcontainers
 
 ### 🚧 Areas for Enhancement
 
@@ -158,49 +161,33 @@ The project has been recently refactored to implement a clean **Domain-Driven De
 
 ## 🚀 Quick Start
 
-### Option 1: Docker (Recommended)
+### 1. Clone and Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/pwmpw/mev_relay.git
-   cd mev_relay
-   ```
+```bash
+git clone https://github.com/pwmpw/mev_relay.git
+cd mev_relay
+make dev-setup
+```
 
-2. **Start the services**
-   ```bash
-   docker-compose up -d
-   ```
+### 2. Start Services
 
-3. **Check the logs**
-   ```bash
-   docker-compose logs -f mev_relay
-   ```
+```bash
+make docker-run
+```
 
-4. **Access monitoring**
-   - Metrics: http://localhost:9090
-   - Grafana: http://localhost:3000 (admin/admin)
-   - Prometheus: http://localhost:9091
+### 3. Build and Test
 
-### Option 2: Local Development
+```bash
+make build
+make test
+make subgraph-test  # Test subgraph integration
+```
 
-1. **Install dependencies**
-   ```bash
-   cargo build --release
-   ```
+### 4. Run Application
 
-2. **Configure Redis and Ethereum node**
-   ```bash
-   # Start Redis
-   redis-server
-   
-   # Start local Ethereum node (optional)
-   geth --dev --http --http.addr 0.0.0.0 --http.port 8545
-   ```
-
-3. **Run the application**
-   ```bash
-   cargo run --release
-   ```
+```bash
+make run
+```
 
 ## ⚙️ Configuration
 
@@ -316,6 +303,66 @@ token_addresses = [
 min_liquidity_eth = 100.0      # Minimum 100 ETH liquidity
 min_volume_24h_eth = 1000.0    # Minimum 1000 ETH 24h volume
 ```
+
+## 📊 Subgraph Metadata Caching
+
+The MEV Relay now includes integration with The Graph to cache token and pool metadata, providing rich context for MEV opportunities.
+
+### Features
+
+- **Token Metadata**: Symbol, name, decimals, total supply, volume, liquidity, and price data
+- **Pool Metadata**: Token pairs, fee tiers, protocol information, TVL, and volume data
+- **Intelligent Caching**: TTL-based caching with background refresh
+- **Performance Metrics**: Cache hit/miss rates, refresh statistics, and error tracking
+- **Configurable Sources**: Support for multiple subgraph endpoints (Uniswap V3, etc.)
+
+### Configuration
+
+```toml
+[subgraph]
+enabled = true
+url = "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
+poll_interval = 60                    # Cache refresh interval in seconds
+cache_ttl_seconds = 300              # Cache TTL in seconds
+max_concurrent_requests = 10         # Max concurrent GraphQL requests
+request_timeout = 10000              # Request timeout in milliseconds
+retry_attempts = 3                   # Number of retry attempts
+retry_delay_ms = 1000                # Delay between retries
+```
+
+### Usage
+
+```rust
+// Get token metadata
+let token_metadata = subgraph_service.get_token_metadata(token_address).await?;
+if let Some(token) = token_metadata {
+    println!("Token: {} ({})", token.name, token.symbol);
+    println!("Decimals: {}", token.decimals);
+    println!("24h Volume: ${:.2}", token.volume_24h.unwrap_or(0.0));
+}
+
+// Get pool metadata
+let pool_metadata = subgraph_service.get_pool_metadata(pool_address).await?;
+if let Some(pool) = pool_metadata {
+    println!("Pool: {}/{}", pool.token0.symbol, pool.token1.symbol);
+    println!("Protocol: {}", pool.protocol);
+    println!("Fee Tier: {}%", pool.fee_tier as f64 / 10000.0);
+    println!("TVL: ${:.2}", pool.tvl_usd);
+}
+```
+
+### Metrics
+
+The subgraph service exposes the following Prometheus metrics:
+
+- `mev_relay_subgraph_cache_hits` - Cache hit count
+- `mev_relay_subgraph_cache_misses` - Cache miss count
+- `mev_relay_subgraph_refresh_total` - Total cache refresh count
+- `mev_relay_subgraph_errors` - Error count
+- `mev_relay_subgraph_tokens_cached` - Number of cached tokens
+- `mev_relay_subgraph_pools_cached` - Number of cached pools
+- `mev_relay_subgraph_last_refresh` - Timestamp of last refresh
+- `mev_relay_subgraph_query_duration_seconds` - Query duration histogram
 
 ## 🔌 Redis Events
 
