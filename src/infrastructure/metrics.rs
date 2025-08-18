@@ -31,7 +31,7 @@ impl Metrics {
             .map_err(|e| anyhow::anyhow!("Invalid metrics address: {}", e))?;
 
         let handle = PrometheusBuilder::new()
-            .with_endpoint(addr)
+            .with_http_listener(addr)
             .install()
             .map_err(|e| anyhow::anyhow!("Failed to install Prometheus metrics: {}", e))?;
 

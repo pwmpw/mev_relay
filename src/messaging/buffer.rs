@@ -488,22 +488,27 @@ use crate::shared::types::{H160, H256};
             transaction: TransactionInfo {
                 hash: H256::from([2u8; 32]),
                 from: H160::from([3u8; 20]),
-                to: H160::from([4u8; 20]),
+                to: Some(H160::from([4u8; 20])),
                 gas_price: 20000000000u128,
-                gas_used: 150000u128,
+                gas_limit: 300000u64,
+                gas_used: 150000u64,
                 nonce: 5u64,
+                value: 0u128,
             },
-            details: SwapDetails {
+            swap_details: SwapDetails {
                 token_in: H160::from([6u8; 20]),
                 token_out: H160::from([7u8; 20]),
                 amount_in: 1000000000000000000u128,
                 amount_out: 2000000000000000000u128,
-                pool_address: H160::from([8u8; 20]),
+                pool_address: Some(H160::from([8u8; 20])),
+                fee_tier: Some(3000u32),
             },
-            block: BlockInfo {
+            block_info: BlockInfo {
                 number: 12345u64,
                 timestamp: 1640995200u64,
+                hash: H256::from([9u8; 32]),
             },
+            metadata: crate::events::domain::EventMetadata::new(),
         }
     }
 
@@ -523,7 +528,7 @@ use crate::shared::types::{H160, H256};
         let mut stats = BufferStats::default();
         stats.increment_events_buffered(5);
         stats.increment_events_processed(3);
-        stats.increment_errors(1);
+        stats.increment_errors();
         
         assert_eq!(stats.events_buffered, 5);
         assert_eq!(stats.events_processed, 3);

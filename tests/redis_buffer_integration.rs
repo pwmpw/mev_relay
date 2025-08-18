@@ -1,12 +1,13 @@
 use mev_relay::{
-    events::domain::SwapEvent,
+    events::domain::{SwapEvent, EventId},
     messaging::buffer::{RedisBuffer, BufferConfig, BufferManager},
     messaging::buffered_processor::{BufferedEventProcessor, BufferedProcessorConfig},
     shared::config::FilteringConfig,
     events::filter::PoolFilter,
     Result,
 };
-use testcontainers::{clients::Cli, images::redis::Redis, Container};
+use testcontainers::{clients::Cli, Container};
+use testcontainers_modules::redis::Redis;
 use tokio::time::{sleep, Duration};
 use tracing::{info, warn, error};
 
@@ -314,12 +315,12 @@ async fn test_concurrent_operations(redis_url: &str) -> Result<()> {
     let mut handles = vec![];
     
     for task_id in 0..10 {
-        let buffer_clone = buffer.clone();
+        let mut buffer_clone = buffer.clone();
         let handle = tokio::spawn(async move {
             for i in 0..20 {
                 let mut event = create_test_event();
                 // Make each event unique
-                event.id = format!("task_{}_event_{}", task_id, i);
+                event.id = EventId::new();
                 buffer_clone.buffer_event(&event).await?;
             }
             Ok::<(), anyhow::Error>(())
@@ -358,7 +359,7 @@ async fn test_large_batch_processing(redis_url: &str) -> Result<()> {
     let mut events = Vec::new();
     for i in 0..5000 {
         let mut event = create_test_event();
-        event.id = format!("large_batch_event_{}", i);
+                    event.id = EventId::new();
         events.push(event);
     }
     
@@ -410,7 +411,7 @@ async fn test_memory_pressure_scenarios(redis_url: &str) -> Result<()> {
         // Add events rapidly
         for i in 0..50 {
             let mut event = create_test_event();
-            event.id = format!("pressure_cycle_{}_event_{}", cycle, i);
+            event.id = EventId::new();
             buffer.buffer_event(&event).await?;
         }
         
@@ -455,7 +456,7 @@ async fn test_performance_under_load(redis_url: &str) -> Result<()> {
         
         for i in batch_start..batch_end {
             let mut event = create_test_event();
-            event.id = format!("perf_event_{}", i);
+            event.id = EventId::new();
             batch.push(event);
         }
         
@@ -562,7 +563,7 @@ async fn test_malformed_data_handling(redis_url: &str) -> Result<()> {
     // Test with invalid cache keys
     let event = create_test_event();
     buffer.cache_event("", &event, Duration::from_secs(60)).await?; // Empty key
-    buffer.cache_event("very_long_key_that_might_cause_issues_".repeat(10), &event, Duration::from_secs(60)).await?;
+    buffer.cache_event(&"very_long_key_that_might_cause_issues_".repeat(10), &event, Duration::from_secs(60)).await?;
     
     // Test with very short TTL
     buffer.cache_event("short_ttl", &event, Duration::from_nanos(1)).await?;
@@ -662,7 +663,7 @@ async fn test_recovery_mechanisms(redis_url: &str) -> Result<()> {
     // Fill buffer partially
     for i in 0..25 {
         let mut event = create_test_event();
-        event.id = format!("recovery_event_{}", i);
+        event.id = EventId::new();
         buffer.buffer_event(&event).await?;
     }
     
@@ -676,7 +677,7 @@ async fn test_recovery_mechanisms(redis_url: &str) -> Result<()> {
     // Re-add events
     for i in 0..25 {
         let mut event = create_test_event();
-        event.id = format!("recovery_event_{}", i);
+        event.id = EventId::new();
         buffer.buffer_event(&event).await?;
     }
     
@@ -1067,7 +1068,7 @@ async fn test_stress_scenarios() -> Result<()> {
         // Rapidly add events
         for i in 0..50 {
             let mut event = create_test_event();
-            event.id = format!("stress_cycle_{}_event_{}", cycle, i);
+            event.id = EventId::new();
             processor.process_event(&event).await?;
         }
         
@@ -1146,7 +1147,7 @@ async fn test_multi_buffer_integration() -> Result<()> {
     }
     
     // Test health check across all buffers
-    let buffer_manager = processor.get_buffer_manager();
+    let buffer_manager = processor.get_buffer_manager_mut();
     let health_result = buffer_manager.health_check_all().await;
     assert!(health_result.is_ok());
     
@@ -1169,7 +1170,7 @@ async fn test_configuration_hot_reload() -> Result<()> {
     // Create buffer manager
     let buffer_config = BufferConfig::default();
     let mut buffer_manager = BufferManager::new(buffer_config);
-    buffer_manager.add_buffer("config_test".to_string(), redis_url).await?;
+    buffer_manager.add_buffer("config_test".to_string(), redis_url.clone()).await?;
     
     // Create filter
     let filter_config = FilteringConfig::default();
@@ -1244,7 +1245,7 @@ async fn test_error_propagation_and_logging() -> Result<()> {
         retry_delay_ms: 1,
     };
     
-    let mut buffer = RedisBuffer::new(redis_url, "error_propagation_test_queue".to_string(), Some(config)).await?;
+    let mut buffer = RedisBuffer::new(redis_url.clone(), "error_propagation_test_queue".to_string(), Some(config)).await?;
     
     // Test error propagation through the system
     let events = vec![
@@ -1294,7 +1295,7 @@ async fn test_error_propagation_and_logging() -> Result<()> {
 
 fn create_test_event() -> SwapEvent {
     use mev_relay::{
-        events::domain::{EventId, EventSource, ProtocolInfo, TransactionInfo, SwapDetails, BlockInfo},
+        events::domain::{EventId, EventSource, ProtocolInfo, TransactionInfo, SwapDetails, BlockInfo, EventMetadata},
         shared::types::{H160, H256},
     };
     
@@ -1309,21 +1310,26 @@ fn create_test_event() -> SwapEvent {
         transaction: TransactionInfo {
             hash: H256::from([2u8; 32]),
             from: H160::from([3u8; 20]),
-            to: H160::from([4u8; 20]),
+            to: Some(H160::from([4u8; 20])),
             gas_price: 20000000000u128,
-            gas_used: 150000u128,
+            gas_limit: 300000u64,
+            gas_used: 150000u64,
             nonce: 5u64,
+            value: 0u128,
         },
-        details: SwapDetails {
+        swap_details: SwapDetails {
             token_in: H160::from([6u8; 20]),
             token_out: H160::from([7u8; 20]),
             amount_in: 1000000000000000000u128,
             amount_out: 2000000000000000000u128,
-            pool_address: H160::from([8u8; 20]),
+            pool_address: Some(H160::from([8u8; 20])),
+            fee_tier: Some(3000u32),
         },
-        block: BlockInfo {
+        block_info: BlockInfo {
             number: 12345u64,
             timestamp: 1640995200u64,
+            hash: H256::from([9u8; 32]),
         },
+        metadata: EventMetadata::new(),
     }
 } 

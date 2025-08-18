@@ -52,10 +52,20 @@ mod tests {
             shutdown_clone.wait().await;
         });
 
+        // Give the spawned task a moment to set up its subscription
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+
         // Send shutdown signal
         shutdown.shutdown();
 
-        // Wait for the task to complete
-        let _ = handle.await;
+        // Wait for the task to complete with a timeout
+        match tokio::time::timeout(tokio::time::Duration::from_secs(5), handle).await {
+            Ok(_) => {
+                // Test passed
+            }
+            Err(_) => {
+                panic!("Shutdown test timed out after 5 seconds");
+            }
+        }
     }
 } 

@@ -144,7 +144,7 @@ impl HealthChecker {
         let uptime = self.start_time.elapsed().as_secs();
         
         let health_status = HealthStatus {
-            status: overall_status,
+            status: overall_status.clone(),
             timestamp: crate::shared::utils::time::now(),
             uptime_seconds: uptime,
             version: env!("CARGO_PKG_VERSION").to_string(),
@@ -198,7 +198,7 @@ impl HealthCheck for RedisHealthCheck {
             Ok(client) => {
                 match client.get_async_connection().await {
                     Ok(mut conn) => {
-                        match redis::cmd("PING").execute_async(&mut conn).await {
+                        match redis::cmd("PING").query_async::<_, String>(&mut conn).await {
                             Ok(_) => {
                                 let duration = start_time.elapsed().as_millis() as u64;
                                 CheckResult {
@@ -326,7 +326,7 @@ impl HealthCheck for SystemHealthCheck {
         
         // Check memory usage
         let memory_info = sysinfo::System::new_all();
-        let memory_usage_percent = memory_info.memory().used() as f64 / memory_info.memory().total() as f64 * 100.0;
+        let memory_usage_percent = (memory_info.total_memory() - memory_info.free_memory()) as f64 / memory_info.total_memory() as f64 * 100.0;
         
         let status = if memory_usage_percent > 90.0 {
             CheckStatus::Fail

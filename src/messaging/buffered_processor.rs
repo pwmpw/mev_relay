@@ -447,7 +447,7 @@ mod tests {
         stats.increment_events_received(10);
         stats.increment_events_processed(8);
         stats.increment_events_filtered(2);
-        stats.increment_errors(1);
+        stats.increment_errors();
         
         assert_eq!(stats.events_received, 10);
         assert_eq!(stats.events_processed, 8);

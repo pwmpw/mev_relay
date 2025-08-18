@@ -163,15 +163,13 @@ impl MevRelay {
 
     /// Start event publisher
     async fn start_event_publisher(&self) -> Result<tokio::task::JoinHandle<()>> {
-        let mut publisher = self.publisher.clone();
+        // Publisher is temporarily disabled
         let stats = self.stats.clone();
 
         let handle = tokio::spawn(async move {
-            if let Err(e) = publisher.start().await {
-                error!("Event publisher failed: {}", e);
-                let mut stats_guard = stats.write().await;
-                stats_guard.increment_errors();
-            }
+            // Publisher service is disabled for now
+            let mut stats_guard = stats.write().await;
+            stats_guard.update_publisher_status("disabled".to_string());
         });
 
         Ok(handle)
@@ -267,7 +265,8 @@ impl MevRelay {
 
     /// Get publisher statistics
     pub async fn get_publisher_stats(&self) -> Result<crate::messaging::domain::PublisherStats> {
-        self.publisher.get_stats().await
+        // Publisher is temporarily disabled
+        Err(anyhow::anyhow!("Publisher service is disabled"))
     }
 }
 

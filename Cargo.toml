@@ -70,6 +70,7 @@ mockall = "0.12"
 wiremock = "0.5"
 testcontainers = "0.15"
 testcontainers-modules = { version = "0.3", features = ["redis", "postgres"] }
+tempfile = "3.8"
 
 [[bin]]
 name = "mev_relay"

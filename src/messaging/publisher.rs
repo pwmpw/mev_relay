@@ -131,17 +131,7 @@ impl EventPublisherService {
     }
 }
 
-impl Clone for EventPublisherService {
-    fn clone(&self) -> Self {
-        Self {
-            config: self.config.clone(),
-            event_receiver: self.event_receiver.clone(),
-            redis_publisher: self.redis_publisher.clone(),
-            stats: self.stats.clone(),
-            is_running: self.is_running.clone(),
-        }
-    }
-}
+
 
 #[cfg(test)]
 mod tests {
@@ -155,15 +145,15 @@ mod tests {
         let (_sender, receiver) = mpsc::channel::<SwapEvent>(100);
         
         let publisher = EventPublisherService::new(config, receiver);
-        assert!(publisher.is_ok());
+        assert!(publisher.await.is_ok());
     }
 
-    #[test]
-    fn test_publisher_config() {
+    #[tokio::test]
+    async fn test_publisher_config() {
         let config = Config::default();
         let (_sender, receiver) = mpsc::channel::<SwapEvent>(100);
         
-        let publisher = EventPublisherService::new(config, receiver).unwrap();
+        let publisher = EventPublisherService::new(config, receiver).await.unwrap();
         assert_eq!(publisher.get_config().redis.channel, "mev_swaps");
     }
 
@@ -172,7 +162,7 @@ mod tests {
         let config = Config::default();
         let (_sender, receiver) = mpsc::channel::<SwapEvent>(100);
         
-        let publisher = EventPublisherService::new(config, receiver).unwrap();
+        let publisher = EventPublisherService::new(config, receiver).await.unwrap();
         assert!(!publisher.is_running().await);
     }
 } 

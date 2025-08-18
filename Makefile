@@ -8,7 +8,7 @@ RUST_VERSION := $(shell rustc --version 2>/dev/null | cut -d' ' -f2 | cut -d'-' 
 CARGO := cargo
 RUSTUP := rustup
 DOCKER := docker
-DOCKER_COMPOSE := docker-compose
+DOCKER_COMPOSE := docker compose
 
 # Build configuration
 BUILD_TYPE ?= release
@@ -133,6 +133,7 @@ test-all: ## Run all tests with different configurations
 	@$(MAKE) integration-test
 	@$(MAKE) testcontainers-test
 	@$(MAKE) redis-buffer-test
+	@$(MAKE) missed-block-test
 	@$(MAKE) performance-test
 	@echo "✓ All tests complete"
 
@@ -190,6 +191,31 @@ redis-buffer-test-integration: ## Run integration and multi-buffer tests
 	@echo "Running integration and multi-buffer tests..."
 	@$(CARGO) test --test redis_buffer_integration test_multi_buffer_integration test_configuration_hot_reload test_error_propagation_and_logging -- --nocapture $(CARGO_FLAGS)
 	@echo "✓ Integration tests complete"
+
+missed-block-test: ## Run missed block logging tests
+	@echo "Running missed block logging tests..."
+	@$(CARGO) test --test missed_block_logging $(CARGO_FLAGS)
+	@echo "✓ Missed block logging tests complete"
+
+missed-block-test-all: ## Run all missed block tests with output
+	@echo "Running all missed block tests with output..."
+	@$(CARGO) test --test missed_block_logging -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ All missed block tests complete"
+
+missed-block-test-basic: ## Run basic missed block monitoring tests
+	@echo "Running basic missed block monitoring tests..."
+	@$(CARGO) test --test missed_block_logging test_missed_block_monitoring_and_logging -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ Basic missed block tests complete"
+
+missed-block-test-throughput: ## Run high-throughput missed block tests
+	@echo "Running high-throughput missed block tests..."
+	@$(CARGO) test --test missed_block_logging test_high_throughput_missed_blocks -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ High-throughput missed block tests complete"
+
+missed-block-test-edge-cases: ## Run edge cases and error condition tests
+	@echo "Running edge cases and error condition tests..."
+	@$(CARGO) test --test missed_block_logging test_edge_cases_and_errors -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ Edge cases tests complete"
 
 # Clean targets
 clean: ## Clean build artifacts
