@@ -594,6 +594,68 @@ impl MonitoringMetrics {
     }
 }
 
+/// Token metadata from subgraph
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TokenMetadata {
+    pub address: H160,
+    pub symbol: String,
+    pub name: String,
+    pub decimals: u8,
+    pub total_supply: Option<String>,
+    pub volume_24h: Option<f64>,
+    pub liquidity: Option<f64>,
+    pub price_usd: Option<f64>,
+    pub last_updated: u64,
+}
+
+/// Pool metadata from subgraph
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct PoolMetadata {
+    pub address: H160,
+    pub token0: TokenMetadata,
+    pub token1: TokenMetadata,
+    pub fee_tier: u32,
+    pub protocol: String,
+    pub liquidity: f64,
+    pub volume_24h: f64,
+    pub tvl_usd: f64,
+    pub last_updated: u64,
+}
+
+/// Subgraph query result
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SubgraphQueryResult<T> {
+    pub data: Option<T>,
+    pub errors: Option<Vec<SubgraphError>>,
+}
+
+/// Subgraph error
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SubgraphError {
+    pub message: String,
+    pub locations: Option<Vec<SubgraphLocation>>,
+    pub path: Option<Vec<String>>,
+}
+
+/// Subgraph error location
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SubgraphLocation {
+    pub line: u32,
+    pub column: u32,
+}
+
+/// Subgraph cache statistics
+#[derive(Debug, Clone, Default)]
+pub struct SubgraphCacheStats {
+    pub tokens_cached: u64,
+    pub pools_cached: u64,
+    pub cache_hits: u64,
+    pub cache_misses: u64,
+    pub last_refresh: Option<u64>,
+    pub refresh_count: u64,
+    pub errors: u64,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

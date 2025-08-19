@@ -12,6 +12,7 @@ pub struct Config {
     pub metrics: MetricsConfig,
     pub logging: LoggingConfig,
     pub filtering: FilteringConfig,
+    pub subgraph: SubgraphConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,6 +78,18 @@ pub struct FilteringConfig {
     pub include_protocols: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubgraphConfig {
+    pub enabled: bool,
+    pub url: String,
+    pub poll_interval: u64,
+    pub cache_ttl_seconds: u64,
+    pub max_concurrent_requests: usize,
+    pub request_timeout: u64,
+    pub retry_attempts: u32,
+    pub retry_delay_ms: u64,
+}
+
 impl Config {
     pub fn load() -> Result<Self, config::ConfigError> {
         let config_path = std::env::var("CONFIG_PATH").unwrap_or_else(|_| "config.toml".to_string());
@@ -127,6 +140,7 @@ impl Default for Config {
             metrics: MetricsConfig::default(),
             logging: LoggingConfig::default(),
             filtering: FilteringConfig::default(),
+            subgraph: SubgraphConfig::default(),
         }
     }
 }
@@ -235,6 +249,21 @@ impl Default for FilteringConfig {
     }
 }
 
+impl Default for SubgraphConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            url: "http://localhost:8000".to_string(),
+            poll_interval: 60,
+            cache_ttl_seconds: 300,
+            max_concurrent_requests: 10,
+            request_timeout: 10000,
+            retry_attempts: 3,
+            retry_delay_ms: 1000,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -316,6 +345,19 @@ mod tests {
     }
 
     #[test]
+    fn test_subgraph_config_default() {
+        let config = SubgraphConfig::default();
+        assert!(config.enabled);
+        assert_eq!(config.url, "http://localhost:8000");
+        assert_eq!(config.poll_interval, 60);
+        assert_eq!(config.cache_ttl_seconds, 300);
+        assert_eq!(config.max_concurrent_requests, 10);
+        assert_eq!(config.request_timeout, 10000);
+        assert_eq!(config.retry_attempts, 3);
+        assert_eq!(config.retry_delay_ms, 1000);
+    }
+
+    #[test]
     fn test_config_default() {
         let config = Config::default();
         
@@ -326,6 +368,7 @@ mod tests {
         assert!(config.flashbots.enabled);
         assert!(config.metrics.enabled);
         assert!(config.filtering.enabled);
+        assert!(config.subgraph.enabled);
     }
 
     #[test]
@@ -419,6 +462,27 @@ mod tests {
     }
 
     #[test]
+    fn test_subgraph_config_custom_values() {
+        let mut config = SubgraphConfig::default();
+        
+        config.url = "http://localhost:8001".to_string();
+        config.poll_interval = 120;
+        config.cache_ttl_seconds = 600;
+        config.max_concurrent_requests = 20;
+        config.request_timeout = 20000;
+        config.retry_attempts = 5;
+        config.retry_delay_ms = 2000;
+        
+        assert_eq!(config.url, "http://localhost:8001");
+        assert_eq!(config.poll_interval, 120);
+        assert_eq!(config.cache_ttl_seconds, 600);
+        assert_eq!(config.max_concurrent_requests, 20);
+        assert_eq!(config.request_timeout, 20000);
+        assert_eq!(config.retry_attempts, 5);
+        assert_eq!(config.retry_delay_ms, 2000);
+    }
+
+    #[test]
     fn test_config_clone() {
         let config = Config::default();
         let cloned = config.clone();
@@ -428,6 +492,7 @@ mod tests {
         assert_eq!(config.mempool.enabled, cloned.mempool.enabled);
         assert_eq!(config.flashbots.enabled, cloned.flashbots.enabled);
         assert_eq!(config.filtering.enabled, cloned.filtering.enabled);
+        assert_eq!(config.subgraph.enabled, cloned.subgraph.enabled);
     }
 
     #[test]
@@ -441,6 +506,21 @@ mod tests {
         assert_eq!(config.min_liquidity_eth, cloned.min_liquidity_eth);
         assert_eq!(config.min_volume_24h_eth, cloned.min_volume_24h_eth);
         assert_eq!(config.include_protocols, cloned.include_protocols);
+    }
+
+    #[test]
+    fn test_subgraph_config_clone() {
+        let config = SubgraphConfig::default();
+        let cloned = config.clone();
+        
+        assert_eq!(config.enabled, cloned.enabled);
+        assert_eq!(config.url, cloned.url);
+        assert_eq!(config.poll_interval, cloned.poll_interval);
+        assert_eq!(config.cache_ttl_seconds, cloned.cache_ttl_seconds);
+        assert_eq!(config.max_concurrent_requests, cloned.max_concurrent_requests);
+        assert_eq!(config.request_timeout, cloned.request_timeout);
+        assert_eq!(config.retry_attempts, cloned.retry_attempts);
+        assert_eq!(config.retry_delay_ms, cloned.retry_delay_ms);
     }
 
     #[test]
@@ -468,6 +548,20 @@ mod tests {
         // Test that we can deserialize from TOML
         let toml_str = toml_string.unwrap();
         let deserialized: Result<FilteringConfig, _> = toml::from_str(&toml_str);
+        assert!(deserialized.is_ok());
+    }
+
+    #[test]
+    fn test_subgraph_config_serde_serialization() {
+        let config = SubgraphConfig::default();
+        
+        // Test that we can serialize to TOML
+        let toml_string = toml::to_string(&config);
+        assert!(toml_string.is_ok());
+        
+        // Test that we can deserialize from TOML
+        let toml_str = toml_string.unwrap();
+        let deserialized: Result<SubgraphConfig, _> = toml::from_str(&toml_str);
         assert!(deserialized.is_ok());
     }
 } 

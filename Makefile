@@ -134,6 +134,7 @@ test-all: ## Run all tests with different configurations
 	@$(MAKE) testcontainers-test
 	@$(MAKE) redis-buffer-test
 	@$(MAKE) missed-block-test
+	@$(MAKE) subgraph-test
 	@$(MAKE) performance-test
 	@echo "✓ All tests complete"
 
@@ -216,6 +217,21 @@ missed-block-test-edge-cases: ## Run edge cases and error condition tests
 	@echo "Running edge cases and error condition tests..."
 	@$(CARGO) test --test missed_block_logging test_edge_cases_and_errors -- --nocapture $(CARGO_FLAGS)
 	@echo "✓ Edge cases tests complete"
+
+missed-block-test-integration: ## Run integration and error condition tests
+	@echo "Running integration and error condition tests..."
+	@$(CARGO) test --test missed_block_logging test_integration_and_error_conditions -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ Integration tests complete"
+
+subgraph-test: ## Run subgraph service tests
+	@echo "Running subgraph service tests..."
+	@$(CARGO) test --test subgraph_integration $(CARGO_FLAGS)
+	@echo "✓ Subgraph service tests complete"
+
+subgraph-test-all: ## Run all subgraph tests with output
+	@echo "Running all subgraph tests with output..."
+	@$(CARGO) test --test subgraph_integration -- --nocapture $(CARGO_FLAGS)
+	@echo "✓ All subgraph tests complete"
 
 # Clean targets
 clean: ## Clean build artifacts

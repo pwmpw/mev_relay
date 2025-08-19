@@ -268,6 +268,16 @@ impl MevRelay {
         // Publisher is temporarily disabled
         Err(anyhow::anyhow!("Publisher service is disabled"))
     }
+
+    /// Get monitoring orchestrator reference
+    pub fn get_monitoring(&self) -> &MonitoringOrchestrator {
+        &self.monitoring
+    }
+
+    /// Get subgraph service reference
+    pub fn get_subgraph_service(&self) -> Option<Arc<tokio::sync::Mutex<crate::monitoring::subgraph::SubgraphServiceImpl>>> {
+        self.monitoring.get_subgraph_service()
+    }
 }
 
 impl Clone for AppStats {

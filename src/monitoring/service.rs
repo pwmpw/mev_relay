@@ -1,7 +1,7 @@
 use crate::{
     events::domain::SwapEvent,
     infrastructure::config::Config,
-    monitoring::{domain::MonitoringService, mempool::MempoolMonitor, flashbots::FlashbotsMonitor},
+    monitoring::{domain::MonitoringService, mempool::MempoolMonitor, flashbots::FlashbotsMonitor, subgraph::SubgraphServiceImpl},
 };
 use crate::Result;
 use std::sync::Arc;
@@ -13,6 +13,7 @@ pub struct MonitoringOrchestrator {
     config: Config,
     event_sender: mpsc::Sender<SwapEvent>,
     services: Vec<Arc<tokio::sync::Mutex<Box<dyn MonitoringService>>>>,
+    subgraph_service: Option<Arc<tokio::sync::Mutex<SubgraphServiceImpl>>>,
     is_running: Arc<tokio::sync::RwLock<bool>>,
 }
 
@@ -22,6 +23,7 @@ impl MonitoringOrchestrator {
             config,
             event_sender,
             services: Vec::new(),
+            subgraph_service: None,
             is_running: Arc::new(tokio::sync::RwLock::new(false)),
         };
 
@@ -51,8 +53,20 @@ impl MonitoringOrchestrator {
             info!("Flashbots monitoring service initialized");
         }
 
+        // Initialize subgraph service
+        if self.config.subgraph.enabled {
+            let subgraph_service = SubgraphServiceImpl::new(self.config.subgraph.clone());
+            self.subgraph_service = Some(Arc::new(tokio::sync::Mutex::new(subgraph_service)));
+            info!("Subgraph service initialized");
+        }
+
         info!("Initialized {} monitoring services", self.services.len());
         Ok(())
+    }
+
+    /// Get subgraph service reference
+    pub fn get_subgraph_service(&self) -> Option<Arc<tokio::sync::Mutex<SubgraphServiceImpl>>> {
+        self.subgraph_service.clone()
     }
 
     /// Start all monitoring services
@@ -71,6 +85,16 @@ impl MonitoringOrchestrator {
                 error!("Failed to start monitoring service: {}", e);
                 return Err(anyhow::anyhow!("Service startup failed: {}", e));
             }
+        }
+
+        // Start subgraph service if enabled
+        if let Some(subgraph_service) = &self.subgraph_service {
+            let mut service_guard = subgraph_service.lock().await;
+            if let Err(e) = service_guard.start().await {
+                error!("Failed to start subgraph service: {}", e);
+                return Err(anyhow::anyhow!("Subgraph service startup failed: {}", e));
+            }
+            info!("Subgraph service started successfully");
         }
 
         *running_guard = true;
@@ -93,6 +117,14 @@ impl MonitoringOrchestrator {
             if let Err(e) = service_guard.stop().await {
                 error!("Failed to stop monitoring service: {}", e);
                 // Continue stopping other services
+            }
+        }
+
+        // Stop subgraph service if enabled
+        if let Some(subgraph_service) = &self.subgraph_service {
+            let mut service_guard = subgraph_service.lock().await;
+            if let Err(e) = service_guard.stop().await {
+                error!("Failed to stop subgraph service: {}", e);
             }
         }
 
@@ -145,6 +177,7 @@ impl Clone for MonitoringOrchestrator {
             config: self.config.clone(),
             event_sender: self.event_sender.clone(),
             services: Vec::new(), // Cannot clone Box<dyn Trait>
+            subgraph_service: self.subgraph_service.clone(),
             is_running: self.is_running.clone(),
         }
     }

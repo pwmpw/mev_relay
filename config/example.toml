@@ -65,36 +65,32 @@ token_addresses = [
     # Wrapped Ether
     "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     # USDC
-    "0xA0b86a33E6441b8c4C8C3C8C3C8C3C8C3C8C3C8C",
+    "0xA0b86a33E6441b8B4b0C3d2C2C0C3d2C2C0C3d2C",
     # USDT
     "0xdAC17F958D2ee523a2206206994597C13D831ec7",
     # DAI
     "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-    # Wrapped Bitcoin
+    # WBTC
     "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
-    # Chainlink
-    "0x514910771AF9Ca656af840dff83E8264EcF986CA",
 ]
 
-# Minimum liquidity threshold in ETH
-min_liquidity_eth = 100.0
-
-# Minimum 24h volume threshold in ETH
-min_volume_24h_eth = 1000.0
-
-# Contracts to exclude (MEV bots, known bad actors)
+min_liquidity_eth = 100.0      # Minimum pool liquidity
+min_volume_24h_eth = 1000.0    # Minimum 24h volume
 exclude_contracts = [
-    "0x0000000000000000000000000000000000000000",  # Zero address
-    # Add known MEV bot addresses here
-    # "0x...",
+    "0x0000000000000000000000000000000000000000",
 ]
-
-# Protocols to include
 include_protocols = [
     "Uniswap V2",
-    "Uniswap V3", 
+    "Uniswap V3",
     "SushiSwap",
-    # Add other protocols as needed
-    # "Balancer",
-    # "Curve",
-] 
+]
+
+[subgraph]
+enabled = true
+url = "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
+poll_interval = 60
+cache_ttl_seconds = 300
+max_concurrent_requests = 10
+request_timeout = 10000
+retry_attempts = 3
+retry_delay_ms = 1000 

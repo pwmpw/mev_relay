@@ -1,0 +1,217 @@
+{
+  "data": {
+    "__schema": {
+      "queryType": {
+        "name": "Query"
+      },
+      "types": [
+        {
+          "kind": "OBJECT",
+          "name": "Query",
+          "fields": [
+            {
+              "name": "tokens",
+              "type": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "Token"
+                }
+              }
+            },
+            {
+              "name": "pools",
+              "type": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "Pool"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "kind": "OBJECT",
+          "name": "Token",
+          "fields": [
+            {
+              "name": "id",
+              "type": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "ID"
+                }
+              }
+            },
+            {
+              "name": "symbol",
+              "type": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            },
+            {
+              "name": "name",
+              "type": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            },
+            {
+              "name": "decimals",
+              "type": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              }
+            },
+            {
+              "name": "totalSupply",
+              "type": {
+                "kind": "SCALAR",
+                "name": "BigInt"
+              }
+            },
+            {
+              "name": "volume24h",
+              "type": {
+                "kind": "SCALAR",
+                "name": "BigDecimal"
+              }
+            },
+            {
+              "name": "liquidity",
+              "type": {
+                "kind": "SCALAR",
+                "name": "BigDecimal"
+              }
+            },
+            {
+              "name": "priceUSD",
+              "type": {
+                "kind": "SCALAR",
+                "name": "BigDecimal"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "OBJECT",
+          "name": "Pool",
+          "fields": [
+            {
+              "name": "id",
+              "type": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "ID"
+                }
+              }
+            },
+            {
+              "name": "token0",
+              "type": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "Token"
+                }
+              }
+            },
+            {
+              "name": "token1",
+              "type": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "Token"
+                }
+              }
+            },
+            {
+              "name": "feeTier",
+              "type": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              }
+            },
+            {
+              "name": "protocol",
+              "type": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            },
+            {
+              "name": "liquidity",
+              "type": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "BigDecimal"
+                }
+              }
+            },
+            {
+              "name": "volume24h",
+              "type": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "BigDecimal"
+                }
+              }
+            },
+            {
+              "name": "tvlUSD",
+              "type": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "BigDecimal"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "kind": "SCALAR",
+          "name": "ID"
+        },
+        {
+          "kind": "SCALAR",
+          "name": "String"
+        },
+        {
+          "kind": "SCALAR",
+          "name": "Int"
+        },
+        {
+          "kind": "SCALAR",
+          "name": "BigInt"
+        },
+        {
+          "kind": "SCALAR",
+          "name": "BigDecimal"
+        }
+      ]
+    }
+  }
+} 

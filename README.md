@@ -1,14 +1,17 @@
-# MEV Relay
+# 🚀 MEV Relay
 
-[![CI](https://github.com/pwmpw/mev_relay/workflows/CI/badge.svg)](https://github.com/pwmpw/mev_relay/actions?query=workflow%3ACI)
-[![Security Scan](https://github.com/pwmpw/mev_relay/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/pwmpw/mev_relay/actions/workflows/security.yml)
-[![Dependencies](https://github.com/pwmpw/mev_relay/actions/workflows/dependencies.yml/badge.svg)](https://github.com/pwmpw/mev_relay/actions/workflows/dependencies.yml)
-[![Docker](https://img.shields.io/badge/docker-✓-brightgreen?style=flat&logo=docker)](https://www.docker.com/)
-[![Testcontainers](https://img.shields.io/badge/testcontainers-✓-brightgreen?style=flat&logo=docker)](https://testcontainers.com/)
-[![Rust](https://img.shields.io/badge/rust-1.86+-orange?style=flat&logo=rust)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+**High-performance MEV relay monitoring mempool and flashbots for real-time swap events**
 
-A high-performance, production-ready DApp built in Rust that monitors real-time swap events on mempool + flashbots and publishes normalized swap events to a Redis pub/sub channel in real time.
+[![Rust](https://img.shields.io/badge/Rust-1.75+-orange.svg)](https://rustup.rs/)
+[![License](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)](https://github.com/pwmpw/mev_relay)
+[![Contact](https://img.shields.io/badge/Contact-@pwmpw-blue.svg)](https://t.me/pwmpw)
+
+> **Contact Developer**: [@pwmpw on Telegram](https://t.me/pwmpw) | [GitHub](https://github.com/pwmpw)
+
+## 🎯 Overview
+
+The MEV Relay is a high-performance Rust application designed to monitor Ethereum mempool and Flashbots for real-time swap events. It provides intelligent filtering, caching, and real-time event streaming to help identify and capitalize on MEV opportunities.
 
 ## 🚀 Features
 
@@ -363,6 +366,17 @@ The subgraph service exposes the following Prometheus metrics:
 - `mev_relay_subgraph_pools_cached` - Number of cached pools
 - `mev_relay_subgraph_last_refresh` - Timestamp of last refresh
 - `mev_relay_subgraph_query_duration_seconds` - Query duration histogram
+
+## 📞 Contact & Support
+
+### Developer Contact
+- **Telegram**: [@pwmpw](https://t.me/pwmpw)
+- **GitHub**: [pwmpw](https://github.com/pwmpw)
+
+### Issues & Contributions
+- Report bugs and feature requests via [GitHub Issues](https://github.com/pwmpw/mev_relay/issues)
+- Submit pull requests for improvements
+- Join discussions in the project repository
 
 ## 🔌 Redis Events
 

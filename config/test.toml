@@ -37,9 +37,19 @@ host = "127.0.0.1"
 port = 9091
 
 [logging]
-level = "warn"  # Reduced logging for tests
+level = "debug"
 format = "json"
 output = "stdout"
+
+[subgraph]
+enabled = false
+url = "http://localhost:8000"
+poll_interval = 10
+cache_ttl_seconds = 60
+max_concurrent_requests = 2
+request_timeout = 1000
+retry_attempts = 1
+retry_delay_ms = 100
 
 [filtering]
 enabled = true

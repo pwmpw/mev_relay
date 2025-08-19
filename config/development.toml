@@ -34,4 +34,14 @@ port = 9090
 [logging]
 level = "debug"
 format = "json"
-output = "stdout" 
+output = "stdout"
+
+[subgraph]
+enabled = true
+url = "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
+poll_interval = 30
+cache_ttl_seconds = 180
+max_concurrent_requests = 5
+request_timeout = 5000
+retry_attempts = 2
+retry_delay_ms = 500 

@@ -176,6 +176,139 @@ impl Metrics {
     }
 }
 
+/// Initialize all metrics
+pub fn init_metrics() {
+    info!("Initializing metrics");
+    
+    // Initialize counters to 0
+    counter!("mev_relay_events_total", 0);
+    counter!("mev_relay_events_by_source", 0);
+    counter!("mev_relay_events_by_protocol", 0);
+    counter!("mev_relay_redis_publish_total", 0);
+    counter!("mev_relay_redis_publish_errors", 0);
+    counter!("mev_relay_redis_subscribe_total", 0);
+    counter!("mev_relay_redis_subscribe_errors", 0);
+    counter!("mev_relay_mempool_blocks_processed", 0);
+    counter!("mev_relay_flashbots_blocks_processed", 0);
+    counter!("mev_relay_missed_blocks_total", 0);
+    counter!("mev_relay_subgraph_cache_hits", 0);
+    counter!("mev_relay_subgraph_cache_misses", 0);
+    counter!("mev_relay_subgraph_refresh_total", 0);
+    counter!("mev_relay_subgraph_errors", 0);
+    
+    // Initialize gauges
+    gauge!("mev_relay_active_connections", 0.0);
+    gauge!("mev_relay_pending_events", 0.0);
+    gauge!("mev_relay_current_block_height", 0.0);
+    gauge!("mev_relay_current_gas_price", 0.0);
+    gauge!("mev_relay_subgraph_tokens_cached", 0.0);
+    gauge!("mev_relay_subgraph_pools_cached", 0.0);
+    gauge!("mev_relay_subgraph_last_refresh", 0.0);
+    
+    // Initialize histograms
+    histogram!("mev_relay_event_processing_duration_seconds", 0.0);
+    histogram!("mev_relay_redis_publish_duration_seconds", 0.0);
+    histogram!("mev_relay_redis_subscribe_duration_seconds", 0.0);
+    histogram!("mev_relay_block_processing_duration_seconds", 0.0);
+    histogram!("mev_relay_subgraph_query_duration_seconds", 0.0);
+    
+    info!("Metrics initialized successfully");
+}
+
+/// Record event processing metrics
+pub fn record_event_processed(source: &str, protocol: &str, duration: f64) {
+    counter!("mev_relay_events_total", 1);
+    counter!("mev_relay_events_by_source", 1, "source" => source.to_string());
+    counter!("mev_relay_events_by_protocol", 1, "protocol" => protocol.to_string());
+    histogram!("mev_relay_event_processing_duration_seconds", duration);
+}
+
+/// Record Redis metrics
+pub fn record_redis_publish(duration: f64, success: bool) {
+    if success {
+        counter!("mev_relay_redis_publish_total", 1);
+    } else {
+        counter!("mev_relay_redis_publish_errors", 1);
+    }
+    histogram!("mev_relay_redis_publish_duration_seconds", duration);
+}
+
+pub fn record_redis_subscribe(duration: f64, success: bool) {
+    if success {
+        counter!("mev_relay_redis_subscribe_total", 1);
+    } else {
+        counter!("mev_relay_redis_subscribe_errors", 1);
+    }
+    histogram!("mev_relay_redis_subscribe_duration_seconds", duration);
+}
+
+/// Record mempool metrics
+pub fn record_mempool_block_processed() {
+    counter!("mev_relay_mempool_blocks_processed", 1);
+}
+
+/// Record Flashbots metrics
+pub fn record_flashbots_block_processed() {
+    counter!("mev_relay_flashbots_blocks_processed", 1);
+}
+
+/// Record missed block metrics
+pub fn record_missed_block() {
+    counter!("mev_relay_missed_blocks_total", 1);
+}
+
+/// Record connection metrics
+pub fn record_active_connections(count: f64) {
+    gauge!("mev_relay_active_connections", count);
+}
+
+/// Record pending events metrics
+pub fn record_pending_events(count: f64) {
+    gauge!("mev_relay_pending_events", count);
+}
+
+/// Record blockchain metrics
+pub fn record_block_height(height: f64) {
+    gauge!("mev_relay_current_block_height", height);
+}
+
+pub fn record_gas_price(price: f64) {
+    gauge!("mev_relay_current_gas_price", price);
+}
+
+/// Record subgraph metrics
+pub fn record_subgraph_cache_hit() {
+    counter!("mev_relay_subgraph_cache_hits", 1);
+}
+
+pub fn record_subgraph_cache_miss() {
+    counter!("mev_relay_subgraph_cache_misses", 1);
+}
+
+pub fn record_subgraph_refresh() {
+    counter!("mev_relay_subgraph_refresh_total", 1);
+}
+
+pub fn record_subgraph_error() {
+    counter!("mev_relay_subgraph_errors", 1);
+}
+
+pub fn record_subgraph_tokens_cached(count: f64) {
+    gauge!("mev_relay_subgraph_tokens_cached", count);
+}
+
+pub fn record_subgraph_pools_cached(count: f64) {
+    gauge!("mev_relay_subgraph_pools_cached", count);
+}
+
+pub fn record_subgraph_last_refresh(timestamp: f64) {
+    gauge!("mev_relay_subgraph_last_refresh", timestamp);
+}
+
+pub fn record_subgraph_query_duration(duration: f64) {
+    histogram!("mev_relay_subgraph_query_duration_seconds", duration);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
