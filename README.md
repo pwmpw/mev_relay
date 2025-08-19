@@ -3,8 +3,10 @@
 **High-performance MEV relay monitoring mempool and flashbots for real-time swap events**
 
 [![Rust](https://img.shields.io/badge/Rust-1.75+-orange.svg)](https://rustup.rs/)
-[![License](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)](https://github.com/pwmpw/mev_relay)
+[![CI](https://github.com/pwmpw/mev_relay/workflows/CI/badge.svg)](https://github.com/pwmpw/mev_relay/actions?query=workflow%3ACI)
+[![Security Scan](https://github.com/pwmpw/mev_relay/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/pwmpw/mev_relay/actions/workflows/security.yml)
+[![Testcontainers](https://img.shields.io/badge/testcontainers-✓-brightgreen?style=flat&logo=docker)](https://testcontainers.com/)
 [![Contact](https://img.shields.io/badge/Contact-@pwmpw-blue.svg)](https://t.me/pwmpw)
 
 > **Contact Developer**: [@pwmpw on Telegram](https://t.me/pwmpw) | [GitHub](https://github.com/pwmpw)
